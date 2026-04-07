@@ -1,11 +1,6 @@
-import sys
-from PySide6.QtWidgets import QApplication
-from ui.tree_visualizer import AVLVisualizer
+from fastapi import FastAPI
+from routes.avl_routes import router
 
+app = FastAPI()
 
-app = QApplication(sys.argv)
-
-window = AVLVisualizer()
-window.show()
-
-sys.exit(app.exec())
+app.include_router(router)
