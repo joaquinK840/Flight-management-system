@@ -8,9 +8,6 @@ cors_origins = [
 
 app = FastAPI()
 
-<<<<<<< HEAD
-app.include_router(router)
-=======
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
@@ -20,4 +17,3 @@ app.add_middleware(
 )
 
 app.include_router(router)
->>>>>>> 645fce04a63bcbafd9232b07b4dc17f06ce271b1
