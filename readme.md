@@ -1,8 +1,10 @@
-1. Crear un entorno virtual
+1. Crear un entorno virtual para el backend
     python -m venv venv
 2. Iniciar el entorno virtual
     venv\Scripts\activate
 3.instalar dependecias
-    pip install -r requirements.txt
+    backend: pip install -r requirements.txt
+    frontend: npm install
 4. correr el proyecto
-    python main.py
+    backend :uvicorn main:app --reload
+    frontend : npm run dev
