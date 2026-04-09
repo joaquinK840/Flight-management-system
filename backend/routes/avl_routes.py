@@ -72,6 +72,23 @@ def search_value(value: int):
         "value": node.getValue()
     }
 
+# -----------------------------
+# CANCELAR VALOR
+# -----------------------------
+@router.delete("/cancel/{value}")
+def cancel_value(value: int):
+    avl.cancel(value)
+
+    return {
+        "canceled": True,
+        "value": value,
+        "message": "Valor cancelado",
+        "tree": serialize(avl.getRoot())
+    }
+
+# -----------------------------
+# ELIMINAR VALOR
+# -----------------------------
 @router.delete("/delete/{value}")
 def delete_value(value: int):
     avl.delete(value)

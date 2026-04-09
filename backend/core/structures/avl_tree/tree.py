@@ -3,7 +3,9 @@ from core.structures.node.node import Node
 from .insert import insert_node
 from .search import search_node
 from .balance import check_balance
+from .cancel import cancel
 from .delete import delete
+
 
 
 class AVL:
@@ -31,6 +33,9 @@ class AVL:
 
         return search_node(self.root, value)
 
+
+    def cancel(self, value):
+        cancel(self, value)
 
     def delete(self, value):
         delete(self, value)
