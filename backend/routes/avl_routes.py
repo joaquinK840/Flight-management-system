@@ -72,6 +72,16 @@ def search_value(value: int):
         "value": node.getValue()
     }
 
+@router.delete("/delete/{value}")
+def delete_value(value: int):
+    avl.delete(value)
+
+    return {
+        "deleted": True,
+        "value": value,
+        "message": "Valor eliminado",
+        "tree": serialize(avl.getRoot())
+    }
 
 # -----------------------------
 # REINICIAR ÁRBOL
