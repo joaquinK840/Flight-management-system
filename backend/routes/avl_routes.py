@@ -1,27 +1,12 @@
 from fastapi import APIRouter
 from core.structures.avl_tree.tree import AVL
 from core.structures.node.node import Node
+from services.serialize_tree import serialize_tree 
 
 router = APIRouter(prefix="/avl", tags=["AVL Tree"])
 
 # instancia global del árbol
 avl = AVL()
-
-
-# -----------------------------
-# SERIALIZADOR DEL ÁRBOL
-# -----------------------------
-def serialize(node):
-
-    if node is None:
-        return None
-
-    return {
-        "value": node.getValue(),
-        "left": serialize(node.getLeftChild()),
-        "right": serialize(node.getRightChild())
-    }
-
 
 # -----------------------------
 # INSERTAR NODO
@@ -36,7 +21,7 @@ def insert_value(value: int):
     return {
         "message": "Nodo insertado",
         "root": avl.getRoot().getValue(),
-        "tree": serialize(avl.getRoot())
+        "tree": serialize_tree(avl)
     }
 
 
@@ -49,7 +34,7 @@ def get_tree():
     root = avl.getRoot()
 
     return {
-        "tree": serialize(root)
+        "tree": serialize_tree(avl)
     }
 
 
@@ -83,7 +68,7 @@ def cancel_value(value: int):
         "canceled": True,
         "value": value,
         "message": "Valor cancelado",
-        "tree": serialize(avl.getRoot())
+        "tree": serialize_tree(avl)
     }
 
 # -----------------------------
@@ -97,7 +82,7 @@ def delete_value(value: int):
         "deleted": True,
         "value": value,
         "message": "Valor eliminado",
-        "tree": serialize(avl.getRoot())
+        "tree": serialize_tree(avl)
     }
 
 # -----------------------------
