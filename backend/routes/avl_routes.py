@@ -367,30 +367,33 @@ async def load_from_json(file: UploadFile = File(...), load_type: str = "topolog
 @router.get("/export-json")
 def export_to_json():
 
-    def serialize_full_node(node):
+    def serialize_to_topology(node):
         if node is None:
             return None
 
-        data = node.getDatos() or {}
-        data.update({
-            "value": node.getValue(),
-            "height": avl.altura(node),
-            "balance_factor": avl.obtenerFactorBalance(node),
-            "left": serialize_full_node(node.getLeftChild()),
-            "right": serialize_full_node(node.getRightChild())
-        })
-        return data
+        # Obtener los datos del nodo (origen, destino, etc.)
+        datos = node.getDatos() or {}
+        
+        # Construir el nodo con la estructura de ModoTopología.json
+        node_data = {
+            "codigo": node.getValue(),
+            "origen": datos.get("origen", ""),
+            "destino": datos.get("destino", ""),
+            "horaSalida": datos.get("horaSalida", ""),
+            "precioBase": datos.get("precioBase", 0),
+            "precioFinal": datos.get("precioFinal", 0),
+            "pasajeros": datos.get("pasajeros", 0),
+            "promocion": datos.get("promocion", False),
+            "alerta": datos.get("alerta", False),
+            "altura": avl.altura(node),
+            "factorEquilibrio": avl.obtenerFactorBalance(node),
+            "izquierdo": serialize_to_topology(node.getLeftChild()),
+            "derecho": serialize_to_topology(node.getRightChild())
+        }
+        return node_data
 
-    tree_data = {
-        "metadata": {
-            "tree_type": "AVL",
-            "root": avl.get_raiz_valor(),
-            "height": avl.get_profundidad(),
-            "leaves": avl.contar_hojas(),
-            "total_nodes": len(avl.inOrden()) if avl.getRoot() else 0
-        },
-        "tree": serialize_full_node(avl.getRoot())
-    }
+    # Exportar directamente el árbol con la estructura de topología
+    tree_data = serialize_to_topology(avl.getRoot())
 
     return JSONResponse(
         content=tree_data,
