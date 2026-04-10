@@ -34,24 +34,20 @@ def check_balance(tree, node):
 
             if get_balance_factor(node.getLeftChild()) >= 0:
                 rotate_right(tree, node)  # LL
-                tree.rotate_right += 1
 
             else:
                 rotate_left(tree, node.getLeftChild())  # LR parte 1
                 rotate_right(tree, node)               # LR parte 2
-                tree.rotate_left_right += 1
 
         # RIGHT HEAVY
         elif bf < -1:
 
             if get_balance_factor(node.getRightChild()) <= 0:
                 rotate_left(tree, node)  # RR
-                tree.rotate_left += 1
 
             else:
                 rotate_right(tree, node.getRightChild())  # RL parte 1
                 rotate_left(tree, node)                   # RL parte 2
-                tree.rotate_right_left += 1
 
         node = node.getParent()
 
