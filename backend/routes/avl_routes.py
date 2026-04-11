@@ -1,28 +1,15 @@
 from fastapi import APIRouter
-from core.structures.avl_tree.tree import AVL
-from core.structures.node.node import Node
-from services.serialize_tree import serialize_tree 
+
+from controllers.tree_controller import tree_controller
 
 router = APIRouter(prefix="/avl", tags=["AVL Tree"])
-
-# instancia global del árbol
-avl = AVL()
 
 # -----------------------------
 # INSERTAR NODO
 # -----------------------------
 @router.post("/insert/{value}")
 def insert_value(value: int):
-
-    node = Node(value)
-
-    avl.insert(node)
-
-    return {
-        "message": "Nodo insertado",
-        "root": avl.getRoot().getValue(),
-        "tree": serialize_tree(avl)
-    }
+    return tree_controller.insert_value(value)
 
 
 # -----------------------------
@@ -30,12 +17,7 @@ def insert_value(value: int):
 # -----------------------------
 @router.get("/tree")
 def get_tree():
-
-    root = avl.getRoot()
-
-    return {
-        "tree": serialize_tree(avl)
-    }
+    return tree_controller.get_tree()
 
 
 # -----------------------------
@@ -43,57 +25,25 @@ def get_tree():
 # -----------------------------
 @router.get("/search/{value}")
 def search_value(value: int):
-
-    node = avl.search(value)
-
-    if node is None:
-        return {
-            "found": False,
-            "value": value
-        }
-
-    return {
-        "found": True,
-        "value": node.getValue()
-    }
+    return tree_controller.search_value(value)
 
 # -----------------------------
 # CANCELAR VALOR
 # -----------------------------
 @router.delete("/cancel/{value}")
 def cancel_value(value: int):
-    avl.cancel(value)
-
-    return {
-        "canceled": True,
-        "value": value,
-        "message": "Valor cancelado",
-        "tree": serialize_tree(avl)
-    }
+    return tree_controller.cancel_value(value)
 
 # -----------------------------
 # ELIMINAR VALOR
 # -----------------------------
 @router.delete("/delete/{value}")
 def delete_value(value: int):
-    avl.delete(value)
-
-    return {
-        "deleted": True,
-        "value": value,
-        "message": "Valor eliminado",
-        "tree": serialize_tree(avl)
-    }
+    return tree_controller.delete_value(value)
 
 # -----------------------------
 # REINICIAR ÁRBOL
 # -----------------------------
 @router.delete("/reset")
 def reset_tree():
-
-    global avl
-    avl = AVL()
-
-    return {
-        "message": "Árbol reiniciado"
-    }
+    return tree_controller.reset_tree()
