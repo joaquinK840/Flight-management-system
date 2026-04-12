@@ -1,9 +1,15 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routes.avl_routes import router
+from routes.avl_routes import router as avl_router
+from routes.flight_routes import router as flight_router
+from routes.version_routes import router as version_router
+from routes.queue_routes import router as queue_router
 
 cors_origins = [
     "http://localhost:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:5174",
 ]
 
 app = FastAPI()
@@ -16,4 +22,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(router)
+app.include_router(avl_router)
+app.include_router(flight_router)
+app.include_router(version_router)
+app.include_router(queue_router)

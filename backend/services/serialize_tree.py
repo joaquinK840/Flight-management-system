@@ -1,59 +1,82 @@
-def _serialize_value(value):
-    if hasattr(value, "to_dict") and callable(value.to_dict):
-        return value.to_dict()
-    return value
+from services.price_calculator import calculate_final_price
 
 
-def _apply_depth_metadata(data, depth, depth_limit):
-    if not isinstance(data, dict):
-        return data
+def serialize_tree(tree, depth_limit=None):
+    """
+    Serializa el arbol AVL con calculos de precios basados en profundidad.
 
-    precio_base = float(data.get("precioBase", 0))
-    penalizacion = float(data.get("penalizacion", 0))
-    nodo_critico = depth_limit is not None and depth >= depth_limit
+    Reglas de precio:
+    - Si profundidad <= depth_limit: precio_final = precio_base
+    - Si profundidad > depth_limit: precio_final = precio_base * 1.25 (exactamente 25%)
 
-    if nodo_critico:
-        data["nodoCritico"] = True
+    Args:
+        tree: Instancia de arbol AVL
+        depth_limit: Limite critico de profundidad (opcional, usa tree.depth_limit si no se proporciona)
+
+    Returns:
+        dict: {
+            "root": arbol serializado con precios recalculados,
+            "depth_limit": limit utilizado,
+            "rotations": {conteos de rotaciones}
+        }
+    """
+    root = tree.getRoot()
+
+    # Determinar el limite de profundidad a usar
+    if depth_limit is not None:
+        depth_limit_val = depth_limit
+    elif hasattr(tree, 'depth_limit'):
+        depth_limit_val = tree.depth_limit
     else:
-        data["nodoCritico"] = False
-        penalizacion = 0.0
+        depth_limit_val = None
 
-    data["penalizacion"] = penalizacion
-    data["precioFinal"] = float(precio_base) + float(penalizacion)
-    return data
+    def _serialize_node(node, current_depth=0):
+        """Serializa un nodo recursivamente con calculo de precios."""
+        if node is None:
+            return None
 
+        # Obtener datos del nodo
+        node_datos = node.getDatos() if node.getDatos() else {}
+        precio_base = node_datos.get('precioBase', 0)
+        codigo = node.getValue()
 
-def _serialize_node(node, depth, depth_limit):
-    if node is None:
-        return None
+        # Calcular precio final y estado critico
+        precio_final, es_critico = calculate_final_price(precio_base, current_depth, depth_limit_val)
 
-    datos = node.getDatos() if hasattr(node, "getDatos") else None
-    value = _serialize_value(datos if datos is not None else node.getValue())
-    value = _apply_depth_metadata(value, depth, depth_limit)
-    if depth_limit is not None and depth >= depth_limit:
         return {
-            "value": value,
-            "left": None,
-            "right": None,
+            "value": codigo,
+            "codigo": codigo,
+            "profundidad": current_depth,
+            "nodoCritico": es_critico,
+            "precioBase": precio_base,
+            "precioFinal": round(precio_final, 2),
+            "datos": node_datos,
+            "left": _serialize_node(node.getLeftChild(), current_depth + 1),
+            "right": _serialize_node(node.getRightChild(), current_depth + 1)
         }
 
     return {
-        "value": value,
-        "left": _serialize_node(node.getLeftChild(), depth + 1, depth_limit),
-        "right": _serialize_node(node.getRightChild(), depth + 1, depth_limit),
+        "root": _serialize_node(root, 0),
+        "depth_limit": depth_limit_val,
+        "rotations": tree.rotation_counts if hasattr(tree, 'rotation_counts') else {},
+        "metrics": {
+            "total_nodes": _count_nodes(root),
+            "height": _get_height(root)
+        }
     }
 
 
-def serialize_tree(tree, depth=0, depth_limit=None):
-    root = tree.getRoot()
-    if depth_limit is None and hasattr(tree, "depth_limit"):
-        depth_limit = tree.depth_limit
+def _count_nodes(node):
+    """Cuenta nodos recursivamente."""
+    if node is None:
+        return 0
+    return 1 + _count_nodes(node.get("left")) + _count_nodes(node.get("right"))
 
-    rotations = None
-    if hasattr(tree, "get_rotation_by_type"):
-        rotations = tree.get_rotation_by_type()
 
-    return {
-        "root": _serialize_node(root, depth, depth_limit),
-        "rotations": rotations,
-    }
+def _get_height(node):
+    """Calcula altura del arbol serializado."""
+    if node is None:
+        return 0
+    left_height = _get_height(node.get("left"))
+    right_height = _get_height(node.get("right"))
+    return 1 + max(left_height, right_height)

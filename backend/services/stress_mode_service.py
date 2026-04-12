@@ -1,0 +1,258 @@
+"""
+Servicio para operaciones de Modo Estrés.
+- Rebalanceo en postorden
+- Auditoría de integridad del árbol
+"""
+
+from core.structures.avl_tree.balance import (
+    get_height, update_height, get_balance_factor, get_balance_case
+)
+from core.structures.avl_tree.rotations import rotate_left, rotate_right
+
+
+def rebalance_tree_postorder(tree):
+    """
+    Rebalancea el árbol recorriendo en postorden.
+    - Visita hojas primero
+    - Para cada nodo desbalanceado, aplica rotación necesaria
+    - Registra rotaciones en tree.rotation_counts
+    
+    Args:
+        tree: Árbol AVL a rebalancear
+        
+    Returns:
+        dict: {
+            'status': 'success',
+            'total_rotations': int,
+            'rotation_counts': {'LL': n, 'RR': n, 'LR': n, 'RL': n},
+            'nodes_rebalanced': int,
+            'imbalanced_before': [...]
+        }
+    """
+    if tree.root is None:
+        return {
+            'status': 'success',
+            'total_rotations': 0,
+            'rotation_counts': {'LL': 0, 'RR': 0, 'LR': 0, 'RL': 0},
+            'nodes_rebalanced': 0,
+            'imbalanced_before': []
+        }
+    
+    # Guardar conteos iniciales
+    initial_counts = {
+        'LL': tree.rotation_counts['LL'],
+        'RR': tree.rotation_counts['RR'],
+        'LR': tree.rotation_counts['LR'],
+        'RL': tree.rotation_counts['RL']
+    }
+    
+    # Coleccionar nodos desbalanceados antes
+    imbalanced_before = []
+    
+    # Rebalancear recursivamente en postorden
+    nodes_rebalanced = _rebalance_recursively(tree, tree.root, imbalanced_before)
+    
+    # Calcular rotaciones aplicadas en esta operación
+    rotations_applied = {
+        'LL': tree.rotation_counts['LL'] - initial_counts['LL'],
+        'RR': tree.rotation_counts['RR'] - initial_counts['RR'],
+        'LR': tree.rotation_counts['LR'] - initial_counts['LR'],
+        'RL': tree.rotation_counts['RL'] - initial_counts['RL']
+    }
+    
+    total_rotations = sum(rotations_applied.values())
+    
+    return {
+        'status': 'success',
+        'total_rotations': total_rotations,
+        'rotation_counts': rotations_applied,
+        'nodes_rebalanced': nodes_rebalanced,
+        'imbalanced_before': imbalanced_before,
+        'current_tree_metrics': {
+            'height': get_height(tree.root),
+            'total_nodes': _count_nodes(tree.root)
+        }
+    }
+
+
+def _rebalance_recursively(tree, node, imbalanced_list):
+    """
+    Recorre en postorden (izquierda, derecha, nodo).
+    
+    Args:
+        tree: Árbol AVL
+        node: Nodo actual
+        imbalanced_list: Lista para acumular nodos desbalanceados encontrados
+        
+    Returns:
+        int: Cantidad de nodos rebalanceados en este subárbol
+    """
+    if node is None:
+        return 0
+    
+    rebalanced_count = 0
+    
+    # POSTORDEN: primero procesar subárbol izquierdo
+    if node.getLeftChild() is not None:
+        rebalanced_count += _rebalance_recursively(tree, node.getLeftChild(), imbalanced_list)
+    
+    # POSTORDEN: procesar subárbol derecho
+    if node.getRightChild() is not None:
+        rebalanced_count += _rebalance_recursively(tree, node.getRightChild(), imbalanced_list)
+    
+    # POSTORDEN: ahora procesar el nodo actual
+    # Actualizar altura
+    update_height(node)
+    
+    # Calcular factor de balance
+    bf = get_balance_factor(node)
+    
+    # Verificar si está desbalanceado
+    if abs(bf) > 1:
+        # Registrar en imbalanced_before
+        imbalanced_list.append({
+            'codigo': node.getValue(),
+            'balance_factor': bf,
+            'height': get_height(node)
+        })
+        
+        # Determinar tipo de rotación
+        rotation_case = get_balance_case(node, bf)
+        
+        # LEFT HEAVY (bf > 1)
+        if bf > 1:
+            left_bf = get_balance_factor(node.getLeftChild())
+            
+            if left_bf >= 0:
+                # LL case
+                tree.rotation_counts['LL'] += 1
+                rotate_right(tree, node)
+                update_height(node)
+                if node.getParent() is not None:
+                    update_height(node.getParent())
+            else:
+                # LR case
+                tree.rotation_counts['LR'] += 1
+                rotate_left(tree, node.getLeftChild())
+                update_height(node.getLeftChild())
+                update_height(node)
+                rotate_right(tree, node)
+                update_height(node)
+                if node.getParent() is not None:
+                    update_height(node.getParent())
+        
+        # RIGHT HEAVY (bf < -1)
+        elif bf < -1:
+            right_bf = get_balance_factor(node.getRightChild())
+            
+            if right_bf <= 0:
+                # RR case
+                tree.rotation_counts['RR'] += 1
+                rotate_left(tree, node)
+                update_height(node)
+                if node.getParent() is not None:
+                    update_height(node.getParent())
+            else:
+                # RL case
+                tree.rotation_counts['RL'] += 1
+                rotate_right(tree, node.getRightChild())
+                update_height(node.getRightChild())
+                update_height(node)
+                rotate_left(tree, node)
+                update_height(node)
+                if node.getParent() is not None:
+                    update_height(node.getParent())
+        
+        rebalanced_count += 1
+    
+    return rebalanced_count
+
+
+def audit_tree(tree):
+    """
+    Audita la integridad del árbol AVL.
+    Verifica:
+    - Factor de balance ∈ {-1, 0, 1} para todos los nodos
+    - Altura correcta según fórmula: 1 + max(left_h, right_h)
+    
+    Args:
+        tree: Árbol AVL
+        
+    Returns:
+        dict: {
+            'valid': bool,
+            'nodes_checked': int,
+            'inconsistent_nodes': [
+                {
+                    'codigo': int,
+                    'balance_factor': int,
+                    'expected_balance': bool,
+                    'expected_height': int,
+                    'actual_height': int
+                }
+            ]
+        }
+    """
+    if tree.root is None:
+        return {
+            'valid': True,
+            'nodes_checked': 0,
+            'inconsistent_nodes': []
+        }
+    
+    inconsistent_nodes = []
+    nodes_checked = [0]  # Usar lista para poder modificar en función anidada
+    
+    def _audit_recursively(node):
+        """Auditar recursivamente cada nodo."""
+        if node is None:
+            return True
+        
+        nodes_checked[0] += 1
+        
+        # Auditar subárbol izquierdo
+        left_valid = _audit_recursively(node.getLeftChild())
+        
+        # Auditar subárbol derecho
+        right_valid = _audit_recursively(node.getRightChild())
+        
+        # Calcular altura esperada
+        left_h = get_height(node.getLeftChild())
+        right_h = get_height(node.getRightChild())
+        expected_height = 1 + max(left_h, right_h)
+        actual_height = node.getHeight()
+        
+        # Calcular factor de balance
+        bf = get_balance_factor(node)
+        
+        # Verificar consistencia
+        is_consistent = True
+        height_consistent = (expected_height == actual_height)
+        balance_consistent = (abs(bf) <= 1)
+        
+        if not height_consistent or not balance_consistent:
+            is_consistent = False
+            inconsistent_nodes.append({
+                'codigo': node.getValue(),
+                'balance_factor': bf,
+                'expected_balance': abs(bf) <= 1,
+                'expected_height': expected_height,
+                'actual_height': actual_height
+            })
+        
+        return left_valid and right_valid and is_consistent
+    
+    is_valid = _audit_recursively(tree.root)
+    
+    return {
+        'valid': is_valid and len(inconsistent_nodes) == 0,
+        'nodes_checked': nodes_checked[0],
+        'inconsistent_nodes': inconsistent_nodes
+    }
+
+
+def _count_nodes(node):
+    """Contar nodos recursivamente."""
+    if node is None:
+        return 0
+    return 1 + _count_nodes(node.getLeftChild()) + _count_nodes(node.getRightChild())

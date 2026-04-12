@@ -4,6 +4,7 @@ import UploadControls from '../components/controls/UploadControls'
 import TreeComparison from '../components/TreeComparison'
 import TreeInfo from '../components/TreeInfo'
 import TreeViewer from '../components/TreeViewer'
+import MetricsPanel from '../components/MetricsPanel'
 import useAvlTree from '../hooks/useAvlTree'
 
 const HomePage = () => {
@@ -19,6 +20,7 @@ const HomePage = () => {
     traversalResult,
     comparisonData,
     showComparison,
+    metrics,
     handleFileLoad,
     handleInsert,
     handleDelete,
@@ -29,7 +31,10 @@ const HomePage = () => {
     handleReset,
     handleTraversal,
     handleExport,
-    handleShowComparison
+    handleShowComparison,
+    handleDepthLimitChange,
+    handleEliminateLeastProfitable,
+    refreshMetrics
   } = useAvlTree()
 
   return (
@@ -39,6 +44,7 @@ const HomePage = () => {
       <UploadControls
         onFileLoad={handleFileLoad}
         onExport={handleExport}
+        onDepthLimitChange={handleDepthLimitChange}
       />
 
       <TreeOperations
@@ -52,6 +58,8 @@ const HomePage = () => {
         onUndo={handleUndo}
         onRedo={handleRedo}
         onReset={handleReset}
+        onEliminateLeastProfitable={handleEliminateLeastProfitable}
+        onExport={handleExport}
       />
 
       <div style={{ marginBottom: '24px', padding: '20px', backgroundColor: '#f9f9f9', borderRadius: '16px', boxShadow: '0 10px 22px rgba(24, 110, 255, 0.08)' }}>
@@ -59,7 +67,6 @@ const HomePage = () => {
       </div>
 
       {tree && <TreeInfo tree={tree} treeHeight={treeHeight} balanceFactor={balanceFactor} />}
-
       {searchResult && (
         <div style={{ marginBottom: '24px', padding: '18px', backgroundColor: '#1f2833', color: 'white', borderRadius: '14px' }}>
           <h3 style={{ marginTop: 0 }}>Resultado de búsqueda</h3>
@@ -87,6 +94,8 @@ const HomePage = () => {
       {showComparison && comparisonData && (
         <TreeComparison data={comparisonData} onClose={() => handleShowComparison(false)} />
       )}
+
+      <MetricsPanel metrics={metrics} refreshMetrics={refreshMetrics} />
 
       <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', justifyContent: 'center' }}>
         <TreeViewer tree={tree} title="Árbol AVL" />

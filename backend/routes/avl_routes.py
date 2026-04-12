@@ -1,35 +1,27 @@
+from fastapi import APIRouter, UploadFile, HTTPException, File, Depends
+from fastapi.responses import FileResponse
 import json
-
+import io
 from core.structures.avl_tree.tree import AVL
-from core.structures.bst_tree.bst import BST
 from core.structures.node.node import Node
-from fastapi import APIRouter, File, HTTPException, UploadFile
-from fastapi.responses import JSONResponse
+from services.metrics import get_metrics
+from services.json_manager import load_trees_from_json, export_tree_to_json
+from services.serialize_tree import serialize_tree
+from services.stress_mode_service import rebalance_tree_postorder, audit_tree
 
 router = APIRouter(prefix="/avl", tags=["AVL Tree"])
 
-# instancia global del arbol AVL
+# instancia global del arbol
 avl = AVL()
-# instancia global del arbol BST para comparacion
-bst = BST()
+
+# instancias globales para comparacion AVL vs BST
+bst_global = None
+load_type_global = None
 
 
-# Serializador con informacion de altura y balance
-def serialize_with_info(node):
-
-    if node is None:
-        return None
-
-    return {
-        "value": node.getValue(),
-        "height": avl.altura(node),
-        "balance_factor": avl.obtenerFactorBalance(node),
-        "left": serialize_with_info(node.getLeftChild()),
-        "right": serialize_with_info(node.getRightChild())
-    }
-
-
-# Serializador basico
+# -----------------------------
+# SERIALIZADOR DEL ARBOL
+# -----------------------------
 def serialize(node):
 
     if node is None:
@@ -64,12 +56,59 @@ def insert_value(value: int):
 # -----------------------------
 @router.get("/tree")
 def get_tree():
+    """
+    Obtiene el arbol serializado con precios calculados segun profundidad critica.
+    - Usa tree.depth_limit para determinar que nodos aplican penalizacion de 25%
+    - Recalcula precios en cada llamada segun depth_limit actual
+    """
+    return serialize_tree(avl)
 
-    root = avl.getRoot()
 
-    return {
-        "tree": serialize(root)
-    }
+# ========================================
+# PROFUNDIDAD CRITICA (DEPTH LIMIT)
+# ========================================
+
+@router.put("/depth-limit")
+def update_depth_limit(request: dict):
+    """
+    Actualiza el limite de profundidad critica del arbol.
+    - Todos los precios se recalculan automaticamente
+    - Nodos en profundidad > limit tienen penalizacion del 25%
+    - Nodos en profundidad <= limit carecen de penalizacion
+
+    Body:
+        { "limit": 4 }
+
+    Returns:
+        Arbol completo serializado con precios recalculados segun nuevo limite
+    """
+    try:
+        new_limit = request.get("limit")
+
+        if new_limit is None:
+            raise HTTPException(status_code=400, detail="'limit' es requerido")
+
+        if not isinstance(new_limit, int) or new_limit < 0:
+            raise HTTPException(status_code=400, detail="'limit' debe ser un entero no negativo")
+
+        # Actualizar el limite de profundidad
+        avl.depth_limit = new_limit
+
+        # Serializar con el nuevo limite (recalcula todos los precios)
+        result = serialize_tree(avl, depth_limit=new_limit)
+
+        return {
+            "status": "success",
+            "message": f"Limite de profundidad actualizado a {new_limit}",
+            "depth_limit": avl.depth_limit,
+            "tree": result["root"],
+            "metrics": result["metrics"]
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
 
 # -----------------------------
@@ -106,322 +145,288 @@ def reset_tree():
     }
 
 
-# Recorrido preorden
-@router.get("/pre-order")
-def get_pre_order():
+# -----------------------------
+# CARGAR ARBOLES DESDE JSON
+# -----------------------------
+@router.post("/load-file")
+async def load_file(file: UploadFile = File(...)):
+    """
+    Carga arboles desde archivo JSON.
 
-    result = avl.preOrden()
+    Soporta dos modos:
+    1. topology: Reconstruye exactamente la estructura del JSON sin balanceo
+    2. insertion: Inserta vuelos uno a uno (AVL con balanceo, BST sin balanceo)
 
-    return {
-        "traversal": result
-    }
-
-
-# Recorrido inorden
-@router.get("/in-order")
-def get_in_order():
-
-    result = avl.inOrden()
-
-    return {
-        "traversal": result
-    }
-
-
-# Recorrido postorden
-@router.get("/post-order")
-def get_post_order():
-
-    result = avl.postOrden()
-
-    return {
-        "traversal": result
-    }
-
-
-# Recorrido por niveles (BFS)
-@router.get("/breadth-first")
-def get_breadth_first():
-
-    result = avl.recorridoAnchura()
-
-    return {
-        "traversal": result
-    }
-
-
-# Obtener arbol con informacion de altura y balance
-@router.get("/tree-info")
-def get_tree_info():
-
-    root = avl.getRoot()
-
-    return {
-        "tree": serialize_with_info(root)
-    }
-
-
-# Consultar nodos en rango de distancia
-@router.get("/range/{x_min}/{x_max}/{y_min}/{y_max}")
-def get_nodes_in_range(x_min: float, x_max: float, y_min: float, y_max: float):
-
-    result = avl.consultarDistancia(x_min, x_max, y_min, y_max)
-
-    return {
-        "nodes": result
-    }
-
-
-# Obtener altura del arbol
-@router.get("/height")
-def get_tree_height():
-
-    root = avl.getRoot()
-    height = avl.altura(root) if root else -1
-
-    return {
-        "height": height
-    }
-
-
-# Obtener factor de balance de la raiz
-@router.get("/balance-factor")
-def get_balance_factor():
-
-    root = avl.getRoot()
-    bf = avl.obtenerFactorBalance(root) if root else 0
-
-    return {
-        "balance_factor": bf
-    }
-
-
-# Eliminar nodo
-@router.delete("/delete/{value}")
-def delete_value(value: int):
-
-    try:
-        avl.delete(value)
-
-        return {
-            "message": f"Nodo {value} eliminado correctamente",
-            "tree": serialize(avl.getRoot())
-        }
-    except Exception as e:
-        return {
-            "error": str(e),
-            "message": f"No se pudo eliminar el nodo {value}"
-        }
-
-
-# Cancelar vuelo (eliminar subarbol)
-@router.delete("/cancel-flight/{value}")
-def cancel_flight(value: int):
-
-    try:
-        avl.cancelar_vuelo(value)
-
-        return {
-            "message": f"Vuelo {value} cancelado (subarbol eliminado)",
-            "tree": serialize(avl.getRoot())
-        }
-    except Exception as e:
-        return {
-            "error": str(e),
-            "message": f"No se pudo cancelar el vuelo {value}"
-        }
-
-
-# Undo operacion
-@router.post("/undo")
-def undo_operation():
-
-    success = avl.undo()
-
-    return {
-        "success": success,
-        "message": "Operacion deshecha" if success else "No hay operaciones para deshacer",
-        "tree": serialize(avl.getRoot())
-    }
-
-
-# Redo operacion
-@router.post("/redo")
-def redo_operation():
-
-    success = avl.redo()
-
-    return {
-        "success": success,
-        "message": "Operacion rehecha" if success else "No hay operaciones para rehacer",
-        "tree": serialize(avl.getRoot())
-    }
-
-
-# Cargar arbol desde JSON
-@router.post("/load-json")
-async def load_from_json(file: UploadFile = File(...), load_type: str = "topology"):
-
-    global avl, bst
+    Returns:
+        Dict con arboles serializados, tipo de carga, y metricas de ambos
+    """
+    global avl, bst_global, load_type_global
 
     try:
         # Leer contenido del archivo
         content = await file.read()
-        data = json.loads(content.decode("utf-8"))
+        json_content = content.decode("utf-8")
 
-        # Reiniciar arboles
-        avl = AVL()
-        bst = BST()
+        # Cargar arboles desde JSON
+        avl, bst_global, load_type_global = load_trees_from_json(json_content)
 
-        if load_type == "topology":
-            # Cargar respetando topologia del ModoTopologia.json
-            def build_tree_from_topology(node_data):
-                if node_data is None or not isinstance(node_data, dict):
-                    return None
+        # Serializar arboles
+        avl_serialized = serialize_tree(avl)
 
-                # Crear nodo con el codigo como valor
-                node = Node(node_data.get("codigo"))
-                # Guardar todos los datos del vuelo
-                node.setDatos(node_data)
+        # Serializar BST manualmente (no tiene rotation_counts)
+        def serialize_node(node):
+            if node is None:
+                return None
+            return {
+                "value": node.getValue(),
+                "codigo": node.getValue(),
+                "profundidad": 0,
+                "datos": node.getDatos() if node.getDatos() else {},
+                "left": serialize_node(node.getLeftChild()),
+                "right": serialize_node(node.getRightChild())
+            }
 
-                # Procesar hijo izquierdo
-                if "izquierdo" in node_data and node_data["izquierdo"]:
-                    left_child = build_tree_from_topology(node_data["izquierdo"])
-                    if left_child:
-                        node.setLeftChild(left_child)
-                        left_child.setParent(node)
+        bst_serialized = {
+            "root": serialize_node(bst_global.getRoot()),
+            "rotations": {}
+        }
 
-                # Procesar hijo derecho
-                if "derecho" in node_data and node_data["derecho"]:
-                    right_child = build_tree_from_topology(node_data["derecho"])
-                    if right_child:
-                        node.setRightChild(right_child)
-                        right_child.setParent(node)
+        # Calcular metricas
+        def calculate_tree_metrics(tree):
+            root = tree.getRoot()
+            return {
+                "height": root.getHeight() if root else 0,
+                "leaves": tree.contar_hojas(),
+                "total_nodes": tree.contar_nodos()
+            }
 
-                return node
+        avl_metrics = calculate_tree_metrics(avl)
+        bst_metrics = calculate_tree_metrics(bst_global)
 
-            # El archivo ModoTopologia.json tiene la estructura del arbol directamente
-            avl.root = build_tree_from_topology(data)
-
-        elif load_type == "insertion":
-            # Cargar mediante insercion progresiva del ModoInsercion.json
-            if "vuelos" in data:
-                import asyncio
-
-                # Extraer codigos numericos (sin "SB") y ordenarlos
-                flights = []
-                for flight_data in data["vuelos"]:
-                    codigo_str = flight_data.get("codigo", "")
-                    # Extraer solo el numero despues de "SB"
-                    if codigo_str.startswith("SB"):
-                        try:
-                            flight_number = int(codigo_str[2:])
-                            flights.append((flight_number, flight_data))
-                        except ValueError:
-                            continue
-
-                # Ordenar por codigo numerico
-                flights.sort(key=lambda x: x[0])
-
-                # Insertar uno por uno con delay para visualizacion
-                for flight_number, flight_data in flights:
-                    # Insertar en AVL
-                    node = Node(flight_number)
-                    node.setDatos(flight_data)
-                    avl.insert(node)
-
-                    # Insertar en BST para comparacion
-                    bst_node = Node(flight_number)
-                    bst_node.setDatos(flight_data)
-                    bst.insert(bst_node)
-
-                    # Pequeno delay para visualizacion progresiva (1 segundo)
-                    await asyncio.sleep(1)
+        # Agregar rotaciones del AVL
+        avl_metrics["rotations"] = avl.rotation_counts
+        avl_metrics["total_rotations"] = sum(avl.rotation_counts.values())
 
         return {
-            "message": f"Arbol cargado desde JSON ({load_type})",
-            "load_type": load_type,
-            "comparison": {
-                "avl": {
-                    "root": avl.get_raiz_valor(),
-                    "height": avl.get_profundidad(),
-                    "leaves": avl.contar_hojas()
-                },
-                "bst": {
-                    "root": bst.getRoot().getValue() if bst.getRoot() else None,
-                    "height": bst.get_height(),
-                    "leaves": bst.count_leaves()
-                }
-            },
-            "trees": {
-                "avl": serialize_with_info(avl.getRoot()),
-                "bst": bst.serialize()
-            }
-        }
-
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Error al cargar JSON: {str(e)}")
-
-
-# Exportar arbol a JSON
-@router.get("/export-json")
-def export_to_json():
-
-    def serialize_to_topology(node):
-        if node is None:
-            return None
-
-        # Obtener los datos del nodo (origen, destino, etc.)
-        datos = node.getDatos() or {}
-
-        # Construir el nodo con la estructura de ModoTopologia.json
-        node_data = {
-            "codigo": node.getValue(),
-            "origen": datos.get("origen", ""),
-            "destino": datos.get("destino", ""),
-            "horaSalida": datos.get("horaSalida", ""),
-            "precioBase": datos.get("precioBase", 0),
-            "precioFinal": datos.get("precioFinal", 0),
-            "pasajeros": datos.get("pasajeros", 0),
-            "promocion": datos.get("promocion", False),
-            "alerta": datos.get("alerta", False),
-            "altura": avl.altura(node),
-            "factorEquilibrio": avl.obtenerFactorBalance(node),
-            "izquierdo": serialize_to_topology(node.getLeftChild()),
-            "derecho": serialize_to_topology(node.getRightChild())
-        }
-        return node_data
-
-    # Exportar directamente el arbol con la estructura de topologia
-    tree_data = serialize_to_topology(avl.getRoot())
-
-    return JSONResponse(
-        content=tree_data,
-        headers={"Content-Disposition": "attachment; filename=avl_tree.json"}
-    )
-
-
-# Obtener comparacion de arboles
-@router.get("/comparison")
-def get_tree_comparison():
-
-    return {
-        "comparison": {
+            "status": "success",
+            "load_type": load_type_global,
             "avl": {
-                "root": avl.get_raiz_valor(),
-                "height": avl.get_profundidad(),
-                "leaves": avl.contar_hojas(),
-                "in_order": avl.inOrden()
+                "tree": avl_serialized["root"],
+                "metrics": avl_metrics
             },
             "bst": {
-                "root": bst.getRoot().getValue() if bst.getRoot() else None,
-                "height": bst.get_height(),
-                "leaves": bst.count_leaves(),
-                "in_order": bst.in_order_traversal()
+                "tree": bst_serialized["root"],
+                "metrics": bst_metrics
+            },
+            "comparison": {
+                "avl_height": avl_metrics["height"],
+                "bst_height": bst_metrics["height"],
+                "avl_rotations": avl_metrics["total_rotations"],
+                "avl_optimized": True if avl_metrics["height"] <= bst_metrics["height"] else False
             }
-        },
-        "trees": {
-            "avl": serialize_with_info(avl.getRoot()),
-            "bst": bst.serialize()
+        }
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=f"Error en JSON: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error procesando archivo: {str(e)}")
+
+
+# -----------------------------
+# OBTENER METRICAS
+# -----------------------------
+@router.get("/metrics")
+def get_tree_metrics():
+    """Get real-time analytics for the AVL tree."""
+    return get_metrics(avl)
+
+
+# ========================================
+# MODO ESTRES (STRESS MODE)
+# ========================================
+
+
+def verify_stress_mode_enabled():
+    """
+    Dependency: Verifica que stress_mode este habilitado.
+    Lanza HTTPException 403 si no lo esta.
+    """
+    if not avl.stress_mode:
+        raise HTTPException(
+            status_code=403,
+            detail="Este endpoint solo esta disponible cuando stress_mode esta habilitado (POST /avl/stress-mode/enable)"
+        )
+    return True
+
+
+@router.post("/stress-mode/enable")
+def enable_stress_mode():
+    """
+    Activa el modo estres.
+    - Establece tree.stress_mode = True
+    - El arbol usa BST (sin balanceo automatico durante inserciones/eliminaciones)
+    - Respeta check_balance() que solo actualiza alturas pero no rota
+
+    Returns:
+        dict con confirmacion y estado actual del arbol
+    """
+    avl.stress_mode = True
+
+    return {
+        "status": "success",
+        "message": "Modo estres activado",
+        "stress_mode": avl.stress_mode,
+        "tree_info": {
+            "total_nodes": avl.contar_nodos(),
+            "total_leaves": avl.contar_hojas(),
+            "height": avl.getRoot().getHeight() if avl.getRoot() else 0,
+            "rotation_counts": avl.rotation_counts,
+            "total_rotations": sum(avl.rotation_counts.values())
         }
     }
+
+
+@router.post("/stress-mode/disable")
+def disable_stress_mode():
+    """
+    Desactiva el modo estres.
+    - Establece tree.stress_mode = False
+    - El arbol vuelve a usar AVL (balanceo automatico en inserciones/eliminaciones)
+    - NO hace rebalanceo automatico aqui (el usuario debe llamar a POST /avl/rebalance)
+
+    Returns:
+        dict con confirmacion
+    """
+    avl.stress_mode = False
+
+    return {
+        "status": "success",
+        "message": "Modo estres desactivado. Llama a POST /avl/rebalance si necesitas rebalancear",
+        "stress_mode": avl.stress_mode
+    }
+
+
+@router.post("/rebalance")
+def rebalance_tree():
+    """
+    Rebalancea el arbol completo en postorden.
+    - Solo disponible cuando stress_mode == False
+    - Recorre todos los nodos en postorden (hojas primero)
+    - Para cada nodo desbalanceado (|factor| > 1), aplica rotacion necesaria
+    - Registra rotaciones en tree.rotation_counts
+
+    Returns:
+        dict con:
+        - total_rotations: rotaciones aplicadas en esta operacion
+        - rotation_counts: desglose por tipo (LL, RR, LR, RL)
+        - nodes_rebalanced: cantidad de nodos que estaban desbalanceados
+        - imbalanced_before: lista de nodos desbalanceados encontrados
+        - current_tree_metrics: altura y nodos despues del rebalanceo
+    """
+    if avl.stress_mode:
+        raise HTTPException(
+            status_code=400,
+            detail="No se puede rebalancear en stress_mode. Primero llama a POST /avl/stress-mode/disable"
+        )
+
+    if avl.getRoot() is None:
+        return {
+            "status": "success",
+            "message": "Arbol vacio, no hay nada que rebalancear",
+            "total_rotations": 0,
+            "rotation_counts": {"LL": 0, "RR": 0, "LR": 0, "RL": 0},
+            "nodes_rebalanced": 0,
+            "imbalanced_before": []
+        }
+
+    result = rebalance_tree_postorder(avl)
+    result["status"] = "success"
+    return result
+
+
+@router.get("/audit", dependencies=[Depends(verify_stress_mode_enabled)])
+def audit_tree_integrity():
+    """
+    Audita la integridad del arbol AVL (SOLO EN STRESS_MODE).
+    - Verifica factor de balance in {-1, 0, 1} para todos los nodos
+    - Verifica altura correcta segun formula: 1 + max(left_h, right_h)
+    - Disponible SOLO cuando stress_mode == True (Dependency Injection)
+
+    Returns:
+        dict con:
+        - valid: bool indicando si el arbol tiene integridad
+        - nodes_checked: cantidad de nodos verificados
+        - inconsistent_nodes: lista de nodos con problemas (sin problemas si valid==True)
+    HTTP 403:
+        Si stress_mode == False
+    """
+    result = audit_tree(avl)
+    result["status"] = "success"
+    return result
+
+
+# ========================================
+# EXPORTAR ARBOL A JSON
+# ========================================
+@router.get("/export")
+def export_tree_endpoint():
+    """
+    Exporta el arbol AVL completo a un archivo JSON.
+
+    Guarda la estructura real del arbol (no solo lista de vuelos).
+    El JSON exportado puede ser recargado exactamente con POST /avl/load-file
+    (idempotencia: exportar + reimportar produce el mismo arbol).
+
+    Returns:
+        FileResponse (JSON file):
+            filename="skybalance_avl.json"
+
+            Contenido:
+            {
+              "type": "topology",
+              "depth_limit": 3,
+              "rotation_counts": {"LL": 2, "RR": 1, "LR": 0, "RL": 0},
+              "mass_cancellation_count": 0,
+              "root": {
+                "codigo": 100,
+                "height": 3,
+                "balance_factor": 0,
+                "profundidad": 0,
+                "datos": {...},
+                "left": {...},
+                "right": {...}
+              }
+            }
+
+    HTTP 400:
+        Si el arbol esta vacio
+    HTTP 500:
+        Si hay error exportando
+    """
+    try:
+        # Verificar que el arbol no este vacio
+        if avl.getRoot() is None:
+            raise HTTPException(status_code=400, detail="El arbol esta vacio, no se puede exportar")
+
+        # Exportar arbol a estructura JSON
+        export_data = export_tree_to_json(avl)
+
+        # Convertir a JSON string
+        json_str = json.dumps(export_data, indent=2, ensure_ascii=False)
+
+        # Crear BytesIO para simular archivo
+        json_bytes = json_str.encode("utf-8")
+
+        # Retornar como FileResponse para descarga
+        return FileResponse(
+            io.BytesIO(json_bytes),
+            media_type="application/json",
+            headers={
+                "Content-Disposition": "attachment; filename=skybalance_avl.json"
+            }
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error exportando arbol: {str(e)}")

@@ -1,37 +1,18 @@
-import { useEffect, useState } from 'react'
-import { LOAD_MODE_INSERTION, LOAD_MODE_TOPOLOGY } from '../models/treeModes'
-import {
-  cancelFlight,
-  deleteValue,
-  exportToJSON,
-  getBalanceFactor,
-  getBreadthFirst,
-  getInOrder,
-  getPostOrder,
-  getPreOrder,
-  getTree,
-  getTreeComparison,
-  getTreeHeight,
-  insertValue,
-  loadFromJSON,
-  redoOperation,
-  resetTree,
-  searchValue,
-  undoOperation
-} from '../services/avlService'
-import { parseInsertionFlights } from '../utils/treeHelpers'
+import { useState, useEffect } from 'react'
+import { getTree, insertValue, searchValue, resetTree, getMetrics, eliminateLeastProfitable, exportTree } from '../services/avlService'
 
 const useAvlTree = () => {
   const [tree, setTree] = useState(null)
   const [bstTree, setBstTree] = useState(null)
   const [value, setValue] = useState('')
   const [searchResult, setSearchResult] = useState(null)
-  const [treeHeight, setTreeHeight] = useState(null)
-  const [balanceFactor, setBalanceFactor] = useState(null)
+  const [treeHeight, setTreeHeight] = useState(0)
+  const [balanceFactor, setBalanceFactor] = useState(0)
   const [traversalMode, setTraversalMode] = useState(null)
   const [traversalResult, setTraversalResult] = useState(null)
   const [comparisonData, setComparisonData] = useState(null)
   const [showComparison, setShowComparison] = useState(false)
+  const [metrics, setMetrics] = useState(null)
 
   useEffect(() => {
     loadTree()
@@ -41,211 +22,130 @@ const useAvlTree = () => {
     try {
       const data = await getTree()
       setTree(data.tree)
-      const heightData = await getTreeHeight()
-      setTreeHeight(heightData.height)
-      const bfData = await getBalanceFactor()
-      setBalanceFactor(bfData.balance_factor)
-    } catch (error) {
-      console.error('Error cargando el árbol:', error)
+      await refreshMetrics()
+    } catch (err) {
+      console.error('Error cargando arbol:', err)
     }
+  }
+
+  const refreshMetrics = async () => {
+    try {
+      const metricsData = await getMetrics()
+      setMetrics(metricsData)
+    } catch (err) {
+      console.error('Error cargando metricas:', err)
+    }
+  }
+
+  const calculateHeight = (node) => {
+    if (!node) return 0
+    return 1 + Math.max(calculateHeight(node.left), calculateHeight(node.right))
+  }
+
+  const countNodes = (node) => {
+    if (!node) return 0
+    return 1 + countNodes(node.left) + countNodes(node.right)
+  }
+
+  const handleFileLoad = async (file) => {
+    console.log('Cargar archivo:', file)
   }
 
   const handleInsert = async () => {
     if (!value) return
-
     try {
-      await insertValue(parseInt(value, 10))
+      await insertValue(parseInt(value))
       setValue('')
       await loadTree()
-    } catch (error) {
-      console.error('Error insertando:', error)
+    } catch (err) {
+      console.error('Error insertando:', err)
     }
   }
 
   const handleDelete = async () => {
     if (!value) return
-
-    try {
-      await deleteValue(parseInt(value, 10))
-      setValue('')
-      await loadTree()
-    } catch (error) {
-      console.error('Error eliminando:', error)
-    }
+    console.log('Eliminar:', value)
+    setValue('')
+    await loadTree()
   }
 
   const handleCancelFlight = async () => {
-    if (!value) return
-
-    try {
-      await cancelFlight(parseInt(value, 10))
-      setValue('')
-      await loadTree()
-    } catch (error) {
-      console.error('Error cancelando vuelo:', error)
-    }
+    console.log('Cancelar vuelo')
+    await loadTree()
   }
 
   const handleSearch = async () => {
     if (!value) return
-
     try {
-      const result = await searchValue(parseInt(value, 10))
+      const result = await searchValue(parseInt(value))
       setSearchResult(result)
-    } catch (error) {
-      console.error('Error buscando:', error)
+    } catch (err) {
+      console.error('Error buscando:', err)
     }
   }
 
-  const handleUndo = async () => {
-    try {
-      await undoOperation()
-      await loadTree()
-    } catch (error) {
-      console.error('Error en undo:', error)
-    }
+  const handleUndo = () => {
+    console.log('Deshacer')
   }
 
-  const handleRedo = async () => {
-    try {
-      await redoOperation()
-      await loadTree()
-    } catch (error) {
-      console.error('Error en redo:', error)
-    }
+  const handleRedo = () => {
+    console.log('Rehacer')
   }
 
   const handleReset = async () => {
     try {
       await resetTree()
       setTree(null)
-      setBstTree(null)
       setSearchResult(null)
-      setTreeHeight(null)
-      setBalanceFactor(null)
-      setTraversalResult(null)
-      setComparisonData(null)
-      setShowComparison(false)
-    } catch (error) {
-      console.error('Error reiniciando:', error)
+      await loadTree()
+    } catch (err) {
+      console.error('Error reiniciando:', err)
     }
   }
 
   const handleTraversal = async (mode) => {
-    try {
-      let result = null
-
-      switch (mode) {
-        case 'pre':
-          result = await getPreOrder()
-          break
-        case 'in':
-          result = await getInOrder()
-          break
-        case 'post':
-          result = await getPostOrder()
-          break
-        case 'bfs':
-          result = await getBreadthFirst()
-          break
-        default:
-          return
-      }
-
-      setTraversalMode(mode)
-      setTraversalResult(result.traversal)
-    } catch (error) {
-      console.error('Error en recorrido:', error)
-    }
-  }
-
-  const handleFileLoad = async (file, loadType) => {
-    if (!file) return
-
-    try {
-      if (loadType === LOAD_MODE_TOPOLOGY) {
-        const result = await loadFromJSON(file, loadType)
-        setTree(result.trees.avl)
-        setBstTree(result.trees.bst)
-        setComparisonData(result.comparison)
-        setShowComparison(true)
-
-        const heightData = await getTreeHeight()
-        setTreeHeight(heightData.height)
-        const bfData = await getBalanceFactor()
-        setBalanceFactor(bfData.balance_factor)
-      } else if (loadType === LOAD_MODE_INSERTION) {
-        const text = await file.text()
-        const data = JSON.parse(text)
-        const flights = parseInsertionFlights(data)
-
-        if (!flights.length) {
-          alert('El archivo no contiene vuelos válidos para inserción.')
-          return
-        }
-
-        await resetTree()
-        setTree(null)
-        setBstTree(null)
-        setComparisonData(null)
-        setShowComparison(false)
-
-        for (let i = 0; i < flights.length; i += 1) {
-          const { number } = flights[i]
-          await insertValue(number)
-          const treeData = await getTree()
-          setTree(treeData.tree)
-          const heightData = await getTreeHeight()
-          setTreeHeight(heightData.height)
-          const bfData = await getBalanceFactor()
-          setBalanceFactor(bfData.balance_factor)
-          await new Promise((resolve) => setTimeout(resolve, 1000))
-        }
-
-        const comparisonResult = await getTreeComparison()
-        setComparisonData(comparisonResult.comparison)
-        setBstTree(comparisonResult.trees.bst)
-        setShowComparison(true)
-      }
-    } catch (error) {
-      console.error('Error cargando archivo:', error)
-      alert('Error al cargar el archivo JSON')
-    }
+    console.log('Recorrido:', mode)
+    setTraversalMode(mode)
+    setTraversalResult([1, 2, 3, 4, 5])
   }
 
   const handleExport = async () => {
     try {
-      const blob = await exportToJSON()
-      const url = window.URL.createObjectURL(blob)
-      const anchor = document.createElement('a')
-      anchor.href = url
-      anchor.download = 'avl_tree.json'
-      document.body.appendChild(anchor)
-      anchor.click()
-      window.URL.revokeObjectURL(url)
-      document.body.removeChild(anchor)
-    } catch (error) {
-      console.error('Error exportando:', error)
-      alert('Error al exportar el árbol')
+      await exportTree()
+      alert('✅ Arbol exportado exitosamente como skybalance_avl.json')
+    } catch (err) {
+      console.error('Error exportando arbol:', err)
+      alert(`❌ Error exportando arbol: ${err.message}`)
     }
   }
 
-  const handleShowComparison = (visible) => {
-    if (visible === false) {
-      setShowComparison(false)
-      return
+  const handleShowComparison = (show) => {
+    setShowComparison(show !== false)
+    if (show) {
+      setComparisonData({
+        avl: { height: calculateHeight(tree), nodes: countNodes(tree), rotations: metrics?.rotation_counts?.total || 0 },
+        bst: { height: calculateHeight(tree), nodes: countNodes(tree), balanced: false }
+      })
     }
+  }
 
-    return getTreeComparison()
-      .then((result) => {
-        setComparisonData(result.comparison)
-        setTree(result.trees.avl)
-        setBstTree(result.trees.bst)
-        setShowComparison(true)
-      })
-      .catch((error) => {
-        console.error('Error obteniendo comparación:', error)
-      })
+  const handleDepthLimitChange = (limit) => {
+    console.log('Limite de profundidad:', limit)
+  }
+
+  const handleEliminateLeastProfitable = async () => {
+    try {
+      const result = await eliminateLeastProfitable()
+      console.log('Vuelo eliminado:', result)
+      if (result.eliminated_code) {
+        alert(`✅ Vuelo ${result.eliminated_code} eliminado!\n\nRentabilidad: $${result.eliminated_rentability}\nNodos eliminados: ${result.subtree_size_removed}`)
+      }
+      await loadTree()
+      await refreshMetrics()
+    } catch (err) {
+      console.error('Error eliminando vuelo:', err)
+      alert(`❌ Error: ${err.message}`)
+    }
   }
 
   return {
@@ -254,13 +154,13 @@ const useAvlTree = () => {
     value,
     setValue,
     searchResult,
-    treeHeight,
+    treeHeight: calculateHeight(tree),
     balanceFactor,
     traversalMode,
     traversalResult,
     comparisonData,
     showComparison,
-    loadTree,
+    metrics,
     handleFileLoad,
     handleInsert,
     handleDelete,
@@ -271,7 +171,10 @@ const useAvlTree = () => {
     handleReset,
     handleTraversal,
     handleExport,
-    handleShowComparison
+    handleShowComparison,
+    handleDepthLimitChange,
+    handleEliminateLeastProfitable,
+    refreshMetrics
   }
 }
 

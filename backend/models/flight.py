@@ -1,55 +1,90 @@
-from dataclasses import dataclass
-
-
-@dataclass
 class Flight:
-	codigo: int
-	origen: str
-	destino: str
-	hora_salida: str
-	precio_base: float
-	precio_final: float
-	pasajeros: int
-	prioridad: int = 0
-	promocion: bool = False
-	alerta: bool = False
-	penalizacion: float = 0.0
-	nodo_critico: bool = False
+    """
+    Model representing a flight with all its associated data.
 
-	@classmethod
-	def from_dict(cls, data: dict) -> "Flight":
-		"""Build a Flight from a raw dict (handles both topology and insertion JSON formats)."""
-		codigo_raw = data.get("codigo", 0)
-		# Handle "SB400" format from insertion JSON
-		if isinstance(codigo_raw, str) and codigo_raw.startswith("SB"):
-			codigo = int(codigo_raw[2:])
-		else:
-			codigo = int(codigo_raw)
-		return cls(
-			codigo=codigo,
-			origen=data.get("origen", ""),
-			destino=data.get("destino", ""),
-			hora_salida=data.get("horaSalida", ""),
-			precio_base=float(data.get("precioBase", 0)),
-			precio_final=float(data.get("precioFinal", data.get("precioBase", 0))),
-			pasajeros=int(data.get("pasajeros", 0)),
-			prioridad=int(data.get("prioridad", 0)),
-			promocion=bool(data.get("promocion", False)),
-			alerta=bool(data.get("alerta", False)),
-		)
+    Attributes:
+        codigo: Flight identifier (numeric)
+        prioridad: Priority level (default: 0 for topology mode)
+        origen: Origin city
+        destino: Destination city
+        horaSalida: Departure time
+        precioBase: Base price of the flight
+        precioFinal: Final price after penalties/discounts
+        pasajeros: Number of passengers
+        promocion: Whether flight has a promotion
+        alerta: Alert flag
+    """
 
-	def to_dict(self) -> dict:
-		return {
-			"codigo": self.codigo,
-			"origen": self.origen,
-			"destino": self.destino,
-			"horaSalida": self.hora_salida,
-			"precioBase": self.precio_base,
-			"precioFinal": self.precio_final,
-			"pasajeros": self.pasajeros,
-			"prioridad": self.prioridad,
-			"promocion": self.promocion,
-			"alerta": self.alerta,
-			"penalizacion": self.penalizacion,
-			"nodoCritico": self.nodo_critico,
-		}
+    def __init__(self, codigo, origen="", destino="", horaSalida="",
+                 precioBase=0, pasajeros=0, prioridad=0, promocion=False,
+                 alerta=False, precioFinal=None):
+        self.codigo = codigo
+        self.prioridad = prioridad
+        self.origen = origen
+        self.destino = destino
+        self.horaSalida = horaSalida
+        self.precioBase = precioBase
+        self.precioFinal = precioFinal if precioFinal is not None else precioBase
+        self.pasajeros = pasajeros
+        self.promocion = promocion
+        self.alerta = alerta
+
+    @classmethod
+    def from_dict(cls, data):
+        """
+        Create a Flight instance from a dictionary.
+
+        Args:
+            data: Dictionary containing flight information
+
+        Returns:
+            Flight instance
+        """
+        if data is None:
+            return None
+
+        # Extract code from 'codigo' field, removing 'SB' prefix if present
+        codigo = data.get('codigo')
+        if isinstance(codigo, str) and codigo.startswith('SB'):
+            try:
+                codigo = int(codigo[2:])
+            except ValueError:
+                codigo = int(codigo) if codigo.isdigit() else codigo
+        else:
+            codigo = int(codigo) if isinstance(codigo, (int, str)) else codigo
+
+        return cls(
+            codigo=codigo,
+            prioridad=data.get('prioridad', 0),
+            origen=data.get('origen', ''),
+            destino=data.get('destino', ''),
+            horaSalida=data.get('horaSalida', ''),
+            precioBase=data.get('precioBase', 0),
+            precioFinal=data.get('precioFinal', data.get('precioBase', 0)),
+            pasajeros=data.get('pasajeros', 0),
+            promocion=data.get('promocion', False),
+            alerta=data.get('alerta', False)
+        )
+
+    def to_dict(self):
+        """
+        Convert Flight instance to dictionary.
+
+        Returns:
+            Dictionary representation of the flight
+        """
+        return {
+            'codigo': self.codigo,
+            'prioridad': self.prioridad,
+            'origen': self.origen,
+            'destino': self.destino,
+            'horaSalida': self.horaSalida,
+            'precioBase': self.precioBase,
+            'precioFinal': self.precioFinal,
+            'pasajeros': self.pasajeros,
+            'promocion': self.promocion,
+            'alerta': self.alerta
+        }
+
+    def __repr__(self):
+        return f"Flight({self.codigo}, {self.origen}->{self.destino}, ${self.precioFinal})"
