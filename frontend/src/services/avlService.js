@@ -88,7 +88,8 @@ export const exportTree = async () => {
     try {
         const response = await fetch(`${API_BASE_URL}/avl/export-json`);
         if (!response.ok) {
-            throw new Error('Error al exportar el árbol');
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.detail || `Error HTTP ${response.status}`);
         }
         
         // Obtener el blob (archivo)
@@ -172,7 +173,8 @@ export const cancelFlight = async (codigo) => {
             method: 'DELETE',
         });
         if (!response.ok) {
-            throw new Error('Error al cancelar vuelo');
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.detail || `Error HTTP ${response.status}`);
         }
         return await response.json();
     } catch (error) {

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, UploadFile, HTTPException, File, Depends, Form
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 import json
 import io
 from core.structures.avl_tree.tree import AVL
@@ -431,9 +431,11 @@ def _build_export_response():
         # Crear BytesIO para simular archivo
         json_bytes = json_str.encode('utf-8')
         
-        # Retornar como FileResponse para descarga
-        return FileResponse(
-            io.BytesIO(json_bytes),
+        # Retornar como StreamingResponse para descarga
+        buffer = io.BytesIO(json_bytes)
+        buffer.seek(0)
+        return StreamingResponse(
+            buffer,
             media_type="application/json",
             headers={
                 "Content-Disposition": "attachment; filename=skybalance_avl.json"

@@ -6,7 +6,7 @@ import { addToQueue, getPendingQueue, processOneFromQueue, processAllFromQueue, 
  * QueueControlComponent
  * Componente para manejar la simulación de concurrencia con cola FIFO
  */
-const QueueControlComponent = () => {
+const QueueControlComponent = ({ onQueueProcessed }) => {
   const [pendingFlights, setPendingFlights] = useState([]);
   const [processing, setProcessing] = useState(false);
   const [processResults, setProcessResults] = useState([]);
@@ -136,6 +136,9 @@ const QueueControlComponent = () => {
           data.conflict ? 'error' : 'success'
         );
         await fetchPendingFlights();
+        if (onQueueProcessed) {
+          await onQueueProcessed();
+        }
         
         if (data.conflict) {
           setConflictCount((prev) => prev + 1);
@@ -177,6 +180,9 @@ const QueueControlComponent = () => {
         );
 
         await fetchPendingFlights();
+        if (onQueueProcessed) {
+          await onQueueProcessed();
+        }
       } else {
         showMsg('Error al procesar cola', 'error');
       }
