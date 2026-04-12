@@ -3,13 +3,13 @@ from .rotations import rotate_left, rotate_right
 
 def get_height(node):
     """
-    Obtiene la altura de un nodo en O(1).
-    
+    Get node height in O(1).
+
     Args:
-        node: Nodo del árbol
-        
+        node: Tree node
+
     Returns:
-        int: Altura del nodo (0 si es None)
+        int: Node height (0 if None)
     """
     if node is None:
         return 0
@@ -18,11 +18,11 @@ def get_height(node):
 
 def update_height(node):
     """
-    Actualiza la altura de un nodo basada en sus hijos en O(1).
-    Debe llamarse después de cualquier cambio en la estructura.
-    
+    Update node height from its children in O(1).
+    Call after any structural change.
+
     Args:
-        node: Nodo a actualizar
+        node: Node to update
     """
     if node is None:
         return
@@ -34,15 +34,14 @@ def update_height(node):
 
 def get_balance_factor(node):
     """
-    Calcula el factor de balance de un nodo en O(1).
-    Factor positivo = árbol inclinado a la izquierda
-    Factor negativo = árbol inclinado a la derecha
-    
+    Compute balance factor in O(1).
+    Positive means left heavy, negative means right heavy.
+
     Args:
-        node: Nodo a evaluar
-        
+        node: Node to evaluate
+
     Returns:
-        int: Factor de balance (h_left - h_right)
+        int: Balance factor (h_left - h_right)
     """
     if node is None:
         return 0
@@ -54,14 +53,14 @@ def get_balance_factor(node):
 
 def get_balance_case(node, bf):
     """
-    Determina el tipo de desbalance (LL, RR, LR, RL).
-    
+    Determine imbalance case (LL, RR, LR, RL).
+
     Args:
-        node: Nodo desbalanceado
-        bf: Factor de balance del nodo
-        
+        node: Imbalanced node
+        bf: Balance factor for the node
+
     Returns:
-        str: Tipo de rotación necesaria
+        str: Rotation case
     """
     if bf > 1:
         if get_balance_factor(node.getLeftChild()) >= 0:
@@ -80,15 +79,15 @@ def get_balance_case(node, bf):
 
 def check_balance(tree, node):
     """
-    Verifica y restaura el balance del árbol AVL desde un nodo hacia la raíz.
-    - Actualiza alturas de todos los nodos afectados
-    - Aplica rotaciones si el árbol está desbalanceado (|bf| > 1)
-    - Respeta tree.stress_mode: si es True, solo actualiza alturas
-    - Propaga cambios hacia la raíz
-    
-    Args:
-        tree: Árbol AVL
-        node: Nodo desde el cual iniciar el chequeo (típicamente padre del inserido)
+    Check and restore AVL balance from a node up to the root.
+
+    The four rotation cases are:
+    - LL: left-left heavy, rotate right.
+    - RR: right-right heavy, rotate left.
+    - LR: left-right heavy, rotate left on child then right on node.
+    - RL: right-left heavy, rotate right on child then left on node.
+
+    When tree.stress_mode is True, only heights are updated (no rotations).
     """
     
     while node is not None:

@@ -1,4 +1,5 @@
 def rotate_right(tree, topNode):
+    """Rotate right: left child becomes parent, top node moves to right subtree."""
 
     middleNode = topNode.getLeftChild()
     parent = topNode.getParent()
@@ -30,6 +31,7 @@ def rotate_right(tree, topNode):
 
 
 def rotate_left(tree, topNode):
+    """Rotate left: right child becomes parent, top node moves to left subtree."""
 
     middleNode = topNode.getRightChild()
     parent = topNode.getParent()

@@ -6,7 +6,7 @@ import { addToQueue, getPendingQueue, processOneFromQueue, processAllFromQueue, 
  * QueueControlComponent
  * Componente para manejar la simulación de concurrencia con cola FIFO
  */
-const QueueControlComponent = () => {
+const QueueControlComponent = ({ onQueueUpdated }) => {
   const [pendingFlights, setPendingFlights] = useState([]);
   const [processing, setProcessing] = useState(false);
   const [processResults, setProcessResults] = useState([]);
@@ -108,6 +108,9 @@ const QueueControlComponent = () => {
       });
       setShowForm(false);
       await fetchPendingFlights();
+      if (onQueueUpdated) {
+        await onQueueUpdated();
+      }
     } catch (error) {
       console.error('Error adding flight:', error);
       showMsg('Error al agregar vuelo', 'error');
@@ -136,6 +139,9 @@ const QueueControlComponent = () => {
           data.conflict ? 'error' : 'success'
         );
         await fetchPendingFlights();
+        if (onQueueUpdated) {
+          await onQueueUpdated();
+        }
         
         if (data.conflict) {
           setConflictCount((prev) => prev + 1);
@@ -177,6 +183,9 @@ const QueueControlComponent = () => {
         );
 
         await fetchPendingFlights();
+        if (onQueueUpdated) {
+          await onQueueUpdated();
+        }
       } else {
         showMsg('Error al procesar cola', 'error');
       }
@@ -202,6 +211,9 @@ const QueueControlComponent = () => {
           setPendingFlights([]);
           setProcessResults([]);
           setConflictCount(0);
+          if (onQueueUpdated) {
+            await onQueueUpdated();
+          }
         } else {
           showMsg('Error al limpiar cola', 'error');
         }

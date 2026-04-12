@@ -53,6 +53,7 @@ const TreeViewer = ({ tree, title = 'Estructura del Árbol AVL' }) => {
 
   const { totalNodes, levels, maxDepth } = treeData
   const isTruncated = totalNodes > 15
+  const isWideTree = totalNodes > 10
 
   const renderNode = (node) => {
     if (!node) return null
@@ -132,20 +133,22 @@ const TreeViewer = ({ tree, title = 'Estructura del Árbol AVL' }) => {
           📊 Árbol con {totalNodes} nodos (mostrando hasta {maxDepth} niveles)
         </div>
       )}
-      <div style={styles.treeContainer}>
-        {levels.map((levelNodes, levelIndex) => (
-          <div key={`level-${levelIndex}`} style={styles.level}>
-            <div style={styles.levelLabel}>Nivel {levelIndex}</div>
-            <div style={styles.levelNodes}>
-              {levelNodes.map((node, idx) => (
-                <div key={`${node.value}-${idx}`}>{renderNode(node)}</div>
-              ))}
+      <div style={{ ...styles.treeScroll, ...(isWideTree ? styles.treeScrollWide : {}) }}>
+        <div style={{ ...styles.treeContainer, ...(isWideTree ? styles.treeContainerWide : {}) }}>
+          {levels.map((levelNodes, levelIndex) => (
+            <div key={`level-${levelIndex}`} style={styles.level}>
+              <div style={styles.levelLabel}>Nivel {levelIndex}</div>
+              <div style={styles.levelNodes}>
+                {levelNodes.map((node, idx) => (
+                  <div key={`${node.value}-${idx}`}>{renderNode(node)}</div>
+                ))}
+              </div>
+              {levelIndex < levels.length - 1 && (
+                <div style={styles.connector}>↓</div>
+              )}
             </div>
-            {levelIndex < levels.length - 1 && (
-              <div style={styles.connector}>↓</div>
-            )}
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   )
@@ -186,6 +189,16 @@ const styles = {
     flexDirection: 'column',
     alignItems: 'center',
     gap: '24px'
+  },
+  treeContainerWide: {
+    minWidth: '1100px'
+  },
+  treeScroll: {
+    width: '100%'
+  },
+  treeScrollWide: {
+    overflowX: 'auto',
+    paddingBottom: '8px'
   },
   level: {
     display: 'flex',

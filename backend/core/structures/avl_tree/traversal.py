@@ -3,7 +3,7 @@ from collections import deque
 # Funciones para recorridos del árbol AVL
 
 def in_order(node):
-    """Recorrido inorden (izquierda, raíz, derecha)"""
+    """In-order traversal (left, root, right)."""
     result = []
     
     def _in_order(n):
@@ -18,7 +18,7 @@ def in_order(node):
 
 
 def breadth_first_traversal(node):
-    """Recorrido por anchura (BFS) nivel a nivel"""
+    """Breadth-first traversal (BFS) level by level."""
     if node is None:
         return []
     
@@ -38,7 +38,7 @@ def breadth_first_traversal(node):
 
 
 def pre_order(node):
-    """Recorrido preorden (raíz, izquierda, derecha)"""
+    """Pre-order traversal (root, left, right)."""
     result = []
     
     def _pre_order(n):
@@ -53,7 +53,7 @@ def pre_order(node):
 
 
 def post_order(node):
-    """Recorrido postorden (izquierda, derecha, raíz)"""
+    """Post-order traversal (left, right, root)."""
     result = []
     
     def _post_order(n):

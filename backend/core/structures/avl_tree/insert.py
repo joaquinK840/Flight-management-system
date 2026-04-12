@@ -2,6 +2,7 @@ from .balance import check_balance
 
 
 def insert_node(tree, currentRoot, node):
+    """Insert a node while preserving the BST ordering property."""
 
     if node.getValue() == currentRoot.getValue():
         print(f"El valor {node.getValue()} ya existe.")

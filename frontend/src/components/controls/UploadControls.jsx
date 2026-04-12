@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { LOAD_MODE_INSERTION, LOAD_MODE_TOPOLOGY } from '../../models/treeModes'
 
-const UploadControls = ({ onFileLoad, onExport, onDepthLimitChange, depthLimit: depthLimitProp }) => {
+const UploadControls = ({ onFileLoad, onExport, onDepthLimitChange, depthLimit: depthLimitProp, showDepthLimit = true }) => {
   const topologyInputRef = useRef(null)
   const insertionInputRef = useRef(null)
   const [depthLimit, setDepthLimit] = useState(3)
@@ -41,59 +41,60 @@ const UploadControls = ({ onFileLoad, onExport, onDepthLimitChange, depthLimit: 
         Archivos disponibles: <code>ModoTopología.json</code> y <code>ModoInserción.json</code> en la carpeta data/
       </p>
 
-      {/* PROMPT 2: Profundidad Límite Crítica */}
-      <div style={{
-        marginBottom: '20px',
-        padding: '16px',
-        backgroundColor: '#fff9c4',
-        borderRadius: '8px',
-        border: '2px solid #FDD835'
-      }}>
-        <label style={{ display: 'block', fontWeight: '700', marginBottom: '8px', color: '#f57f17' }}>
-          ⚠️ Profundidad límite crítica
-        </label>
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          <input
-            type="number"
-            min="0"
-            max="20"
-            value={Number.isFinite(depthLimit) ? depthLimit : ''}
-            onChange={(e) => {
-              const raw = e.target.value
-              if (raw === '') {
-                setDepthLimit(NaN)
-                return
-              }
-              const parsed = parseInt(raw, 10)
-              setDepthLimit(Number.isNaN(parsed) ? NaN : parsed)
-            }}
-            style={{
-              padding: '10px 12px',
-              borderRadius: '6px',
-              border: '2px solid #FDD835',
-              fontSize: '16px',
-              width: '80px',
-              fontWeight: '600'
-            }}
-          />
-          <button
-            type="button"
-            onClick={handleApplyDepthLimit}
-            disabled={isApplying}
-            style={{
-              ...buttonStyle('#FDD835'),
-              color: '#333',
-              cursor: isApplying ? 'not-allowed' : 'pointer',
-              opacity: isApplying ? 0.6 : 1
-            }}
-          >
-            {isApplying ? '⏳ Aplicando...' : '✓ Aplicar'}
-          </button>
-          <span style={{ fontSize: '12px', color: '#666' }}>
-            (Los nodos más profundos de este límite tendrán penalización de precio)
-          </span>
+      {showDepthLimit && (
+        <div style={{
+          marginBottom: '20px',
+          padding: '16px',
+          backgroundColor: '#fff9c4',
+          borderRadius: '8px',
+          border: '2px solid #FDD835'
+        }}>
+          <label style={{ display: 'block', fontWeight: '700', marginBottom: '8px', color: '#f57f17' }}>
+            ⚠️ Profundidad límite crítica
+          </label>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            <input
+              type="number"
+              min="0"
+              max="20"
+              value={Number.isFinite(depthLimit) ? depthLimit : ''}
+              onChange={(e) => {
+                const raw = e.target.value
+                if (raw === '') {
+                  setDepthLimit(NaN)
+                  return
+                }
+                const parsed = parseInt(raw, 10)
+                setDepthLimit(Number.isNaN(parsed) ? NaN : parsed)
+              }}
+              style={{
+                padding: '10px 12px',
+                borderRadius: '6px',
+                border: '2px solid #FDD835',
+                fontSize: '16px',
+                width: '80px',
+                fontWeight: '600'
+              }}
+            />
+            <button
+              type="button"
+              onClick={handleApplyDepthLimit}
+              disabled={isApplying}
+              style={{
+                ...buttonStyle('#FDD835'),
+                color: '#333',
+                cursor: isApplying ? 'not-allowed' : 'pointer',
+                opacity: isApplying ? 0.6 : 1
+              }}
+            >
+              {isApplying ? '⏳ Aplicando...' : '✓ Aplicar'}
+            </button>
+            <span style={{ fontSize: '12px', color: '#666' }}>
+              (Los nodos más profundos de este límite tendrán penalización de precio)
+            </span>
+          </div>
         </div>
-      </div>
+      )}
 
       <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
         <input
