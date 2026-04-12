@@ -68,3 +68,18 @@ export const getMetrics = async () => {
         throw error;
     }
 };
+
+export const eliminateLeastProfitable = async () => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/flights/eliminate-least-profitable`, {
+            method: 'DELETE',
+        });
+        if (!response.ok) {
+            throw new Error('Error al eliminar vuelo de menor rentabilidad');
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error en eliminateLeastProfitable:', error);
+        throw error;
+    }
+};

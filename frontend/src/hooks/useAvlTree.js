@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getTree, insertValue, searchValue, resetTree, getMetrics } from '../services/avlService'
+import { getTree, insertValue, searchValue, resetTree, getMetrics, eliminateLeastProfitable } from '../services/avlService'
 
 const useAvlTree = () => {
   const [tree, setTree] = useState(null)
@@ -127,6 +127,22 @@ const useAvlTree = () => {
     console.log('Límite de profundidad:', limit)
   }
 
+  const handleEliminateLeastProfitable = async () => {
+    try {
+      const result = await eliminateLeastProfitable()
+      console.log('Vuelo eliminado:', result)
+      // Mostrar alerta al usuario
+      if (result.eliminated_code) {
+        alert(`✅ Vuelo ${result.eliminated_code} eliminado!\n\nRentabilidad: $${result.eliminated_rentability}\nNodos eliminados: ${result.subtree_size_removed}`)
+      }
+      await loadTree()
+      await refreshMetrics()
+    } catch (err) {
+      console.error('Error eliminando vuelo:', err)
+      alert(`❌ Error: ${err.message}`)
+    }
+  }
+
   return {
     tree,
     bstTree,
@@ -152,6 +168,7 @@ const useAvlTree = () => {
     handleExport,
     handleShowComparison,
     handleDepthLimitChange,
+    handleEliminateLeastProfitable,
     refreshMetrics
   }
 }

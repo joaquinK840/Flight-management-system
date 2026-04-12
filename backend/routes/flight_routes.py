@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional, Dict
 from services.tree_repository import TreeRepository
+from services.profitability_service import find_least_profitable, count_subtree_size
 from core.structures.avl_tree.tree import AVL
 
 router = APIRouter(prefix="/flights", tags=["Flights"])
@@ -258,3 +259,60 @@ def reset_tree():
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/eliminate-least-profitable")
+def eliminate_least_profitable():
+    """
+    Elimina el nodo con MENOR rentabilidad del árbol.
+    
+    Proceso:
+    1. Recorrer TODO el árbol calculando rentabilidad de cada nodo
+    2. Encontrar el nodo de menor rentabilidad
+    3. Criterios de desempate:
+       a) Si hay empate, tomar el más lejano a raíz (mayor profundidad)
+       b) Si sigue empate, tomar el de código más grande
+    4. Cancelar ese nodo (eliminar + descendientes)
+    5. Rebalancear el árbol
+    
+    Returns:
+        {
+            "status": "success",
+            "message": "Vuelo de menor rentabilidad eliminado",
+            "eliminated_code": int,
+            "eliminated_rentability": float,
+            "subtree_size_removed": int,
+            "tree": serialized tree
+        }
+    """
+    try:
+        # Obtener árbol del repositorio
+        tree = flight_repository.tree
+        
+        # Encontrar nodo de menor rentabilidad
+        least_profitable_node, rentability, codigo, profundidad = find_least_profitable(tree)
+        
+        if least_profitable_node is None:
+            raise ValueError("No se encontró nodo para eliminar")
+        
+        # Contar cuántos nodos se van a eliminar (subárbol)
+        subtree_size = count_subtree_size(least_profitable_node)
+        
+        # Cancelar (eliminar nodo + descendientes)
+        result = flight_repository.cancel_flight_subtree(codigo)
+        
+        return {
+            "status": "success",
+            "message": f"Vuelo {codigo} (menor rentabilidad) eliminado con {subtree_size - 1} descendientes",
+            "eliminated_code": codigo,
+            "eliminated_rentability": round(float(rentability), 2),
+            "subtree_size_removed": subtree_size,
+            "profundidad": profundidad,
+            "tree": result["tree"],
+            "mass_cancellations": result.get("mass_cancellations", 0)
+        }
+    
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error eliminando vuelo: {str(e)}")

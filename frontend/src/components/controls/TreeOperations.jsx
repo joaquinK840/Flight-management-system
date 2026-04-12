@@ -8,7 +8,8 @@ const TreeOperations = ({
   onShowComparison,
   onUndo,
   onRedo,
-  onReset
+  onReset,
+  onEliminateLeastProfitable
 }) => {
   return (
     <div style={{
@@ -47,6 +48,9 @@ const TreeOperations = ({
         </button>
         <button onClick={onCancelFlight} style={{ padding: '10px 20px', backgroundColor: '#9C27B0', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
           ✈️ Cancelar Vuelo
+        </button>
+        <button onClick={onEliminateLeastProfitable} style={{ padding: '10px 20px', backgroundColor: '#E91E63', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
+          💰 Eliminar Menor Rentabilidad
         </button>
         <button onClick={onShowComparison} style={{ padding: '10px 20px', backgroundColor: '#00BCD4', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
           📊 Comparar
