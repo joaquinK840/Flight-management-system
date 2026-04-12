@@ -7,6 +7,7 @@ from core.structures.queue.queue import Queue
 from core.structures.node.node import Node
 from core.structures.avl_tree.balance import get_balance_factor
 from core.shared_instances import flight_queue  # Usar instancia compartida
+from services.serialize_tree import serialize_tree
 
 
 def add_flight_to_queue(flight_data: dict) -> dict:
@@ -83,10 +84,10 @@ def process_one_flight(tree) -> dict:
         node = Node(codigo, flight_data)
         tree.insert(node)
         
-        # Detectar conflictos: balance factor > 2 (o < -2)
+        # Detectar conflictos si stress_mode y balance factor > 1
         root = tree.getRoot()
         bf = get_balance_factor(root)
-        has_conflict = abs(bf) > 2
+        has_conflict = tree.stress_mode and abs(bf) > 1
         conflict_detail = None
         
         if has_conflict:
@@ -96,7 +97,7 @@ def process_one_flight(tree) -> dict:
                 conflict_detail = f"Árbol muy inclinado a la derecha (BF={bf}). Posible degradación de performance."
         
         # Serializar árbol actual
-        tree_after = _serialize_tree_simple(root)
+        tree_after = serialize_tree(tree, depth=0, depth_limit=tree.depth_limit)["root"]
         
         return {
             "status": "success",

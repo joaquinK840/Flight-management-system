@@ -68,8 +68,8 @@ const QueueControlComponent = ({ onQueueUpdated }) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: name === 'prioridad' || name === 'pasajeros' || name === 'precioBase' 
-        ? parseFloat(value) 
+      [name]: name === 'prioridad' || name === 'pasajeros' || name === 'precioBase'
+        ? parseFloat(value)
         : value,
     }));
   };
@@ -95,7 +95,12 @@ const QueueControlComponent = ({ onQueueUpdated }) => {
     }
 
     try {
-      await addToQueue(formData);
+      await addToQueue({
+        ...formData,
+        precioBase: parseFloat(formData.precioBase),
+        pasajeros: parseInt(formData.pasajeros, 10),
+        prioridad: parseInt(formData.prioridad, 10)
+      });
       showMsg(`✅ Vuelo ${formData.codigo} agregado a la cola`, 'success');
       setFormData({
         codigo: '',
