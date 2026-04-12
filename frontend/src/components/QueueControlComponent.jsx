@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './QueueControlComponent.css';
-import { addToQueue, getPendingQueue, processOneFromQueue, processAllFromQueue, clearQueue } from '../services/avlService';
+import { addToQueue, getPendingQueue, processOneFromQueue, clearQueue } from '../services/avlService';
 
 /**
  * QueueControlComponent
@@ -68,9 +68,7 @@ const QueueControlComponent = ({ onQueueProcessed }) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: name === 'prioridad' || name === 'pasajeros' || name === 'precioBase' 
-        ? parseFloat(value) 
-        : value,
+      [name]: value,
     }));
   };
 
@@ -95,7 +93,12 @@ const QueueControlComponent = ({ onQueueProcessed }) => {
     }
 
     try {
-      await addToQueue(formData);
+      await addToQueue({
+        ...formData,
+        precioBase: parseFloat(formData.precioBase),
+        pasajeros: parseInt(formData.pasajeros, 10),
+        prioridad: parseInt(formData.prioridad, 10)
+      });
       showMsg(`✅ Vuelo ${formData.codigo} agregado a la cola`, 'success');
       setFormData({
         codigo: '',
@@ -166,26 +169,39 @@ const QueueControlComponent = ({ onQueueProcessed }) => {
 
     setProcessing(true);
     try {
-      const data = await processAllFromQueue();
+      let remaining = pendingFlights.length;
+      const results = [];
+      let conflicts = 0;
 
-      if (data.status === 'success') {
-        setProcessResults(data.results || []);
-        setConflictCount(data.total_conflicts || 0);
+      while (remaining > 0) {
+        const data = await processOneFromQueue();
+        results.push(data);
 
-        showMsg(
-          `✅ ${data.total_processed} vuelos procesados${
-            data.total_conflicts > 0 ? ` (${data.total_conflicts} conflictos)` : ''
-          }`,
-          data.total_conflicts > 0 ? 'error' : 'success'
-        );
-
-        await fetchPendingFlights();
-        if (onQueueProcessed) {
-          await onQueueProcessed();
+        if (data.status === 'success') {
+          remaining = data.queue_remaining || 0;
+          if (data.conflict) {
+            conflicts += 1;
+            showMsg('⚠️ Conflicto de balance crítico detectado', 'error');
+          }
+          await fetchPendingFlights();
+          if (onQueueProcessed) {
+            await onQueueProcessed();
+          }
+        } else {
+          break;
         }
-      } else {
-        showMsg('Error al procesar cola', 'error');
+
+        if (remaining > 0) {
+          await new Promise((resolve) => setTimeout(resolve, 800));
+        }
       }
+
+      setProcessResults(results);
+      setConflictCount(conflicts);
+      showMsg(
+        `✅ ${results.length} vuelos procesados${conflicts > 0 ? ` (${conflicts} conflictos)` : ''}`,
+        conflicts > 0 ? 'error' : 'success'
+      );
     } catch (error) {
       console.error('Error processing queue:', error);
       showMsg('Error al procesar cola', 'error');
