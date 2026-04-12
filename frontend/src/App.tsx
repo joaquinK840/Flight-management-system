@@ -5,6 +5,8 @@ import { getTree, insertValue, resetTree, searchValue } from './services/avlServ
 
 function App() {
   const [tree, setTree] = useState(null)
+  const [rotations, setRotations] = useState(null)
+  const [showRotations, setShowRotations] = useState(false)
   const [value, setValue] = useState('')
   const [searchResult, setSearchResult] = useState(null)
 
@@ -15,7 +17,10 @@ function App() {
   const loadTree = async () => {
     try {
       const data = await getTree()
-      setTree(data.tree)
+      const treeRoot = data?.tree?.root ?? data?.tree ?? null
+      const rotationData = data?.tree?.rotations ?? null
+      setTree(treeRoot)
+      setRotations(rotationData)
     } catch (error) {
       console.error('Error cargando el árbol:', error)
     }
@@ -46,6 +51,8 @@ function App() {
     try {
       await resetTree()
       setTree(null)
+      setRotations(null)
+      setShowRotations(false)
       setSearchResult(null)
     } catch (error) {
       console.error('Error reiniciando:', error)
@@ -148,6 +155,38 @@ function App() {
       )}
 
       <TreeViewer tree={tree} />
+
+      {rotations && (
+        <div style={{
+          padding: '12px',
+          backgroundColor: '#fff7e6',
+          borderLeft: '4px solid #ffb300',
+          borderRadius: '4px',
+          marginTop: '20px',
+          maxWidth: '500px',
+          margin: '20px auto 0'
+        }}>
+          <button
+            onClick={() => setShowRotations((prev) => !prev)}
+            style={{
+              padding: '6px 12px',
+              backgroundColor: '#ffb300',
+              color: '#1f1f1f',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontWeight: 'bold'
+            }}
+          >
+            {showRotations ? 'Ocultar detalles' : 'Ver detalles'}
+          </button>
+          {showRotations && (
+            <p style={{ marginTop: '10px' }}>
+              Rotaciones: LL {rotations.LL ?? 0} | RR {rotations.RR ?? 0} | LR {rotations.LR ?? 0} | RL {rotations.RL ?? 0}
+            </p>
+          )}
+        </div>
+      )}
     </div>
   )
 }
