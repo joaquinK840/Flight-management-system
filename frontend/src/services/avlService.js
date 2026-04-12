@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:8000'; // Ajusta si el backend corre en otro puerto
+import { API_BASE_URL } from '../config/api'
 
 export const insertValue = async (value) => {
     try {

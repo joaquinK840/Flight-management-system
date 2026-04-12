@@ -33,7 +33,19 @@ const childBlockStyle = {
   margin: '0 8px'
 }
 
-const TreeViewer = ({ tree, title = "Estructura del Árbol AVL" }) => {
+const TreeViewer = ({ tree, title = 'Estructura del Árbol AVL' }) => {
+  const formatValue = (value) => {
+    if (value && typeof value === 'object') {
+      if ('codigo' in value) return value.codigo
+      try {
+        return JSON.stringify(value)
+      } catch (error) {
+        return String(value)
+      }
+    }
+    return value
+  }
+
   const renderNode = (node) => {
     if (!node) {
       return <div style={{ flex: 1, minWidth: '120px' }} />
@@ -43,7 +55,7 @@ const TreeViewer = ({ tree, title = "Estructura del Árbol AVL" }) => {
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '120px' }}>
-        <div style={nodeStyle}>{node.value}</div>
+        <div style={nodeStyle}>{formatValue(node.value)}</div>
 
         {hasChildren && (
           <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', marginTop: '12px' }}>

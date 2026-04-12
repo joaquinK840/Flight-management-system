@@ -2,7 +2,7 @@ class Node:
 
     def __init__(self, value, datos=None):
         self.value = value
-        self.datos = datos  # Additional data storage
+        self.datos = datos
         self.parent = None
         self.leftChild = None
         self.rightChild = None

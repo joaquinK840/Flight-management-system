@@ -8,13 +8,13 @@ from fastapi.responses import JSONResponse
 
 router = APIRouter(prefix="/avl", tags=["AVL Tree"])
 
-# instancia global del árbol AVL
+# instancia global del arbol AVL
 avl = AVL()
-# instancia global del árbol BST para comparación
+# instancia global del arbol BST para comparacion
 bst = BST()
 
 
-# Serializador con información de altura y balance
+# Serializador con informacion de altura y balance
 def serialize_with_info(node):
 
     if node is None:
@@ -29,7 +29,7 @@ def serialize_with_info(node):
     }
 
 
-# Serializador básico
+# Serializador basico
 def serialize(node):
 
     if node is None:
@@ -60,7 +60,7 @@ def insert_value(value: int):
 
 
 # -----------------------------
-# OBTENER ÁRBOL COMPLETO
+# OBTENER ARBOL COMPLETO
 # -----------------------------
 @router.get("/tree")
 def get_tree():
@@ -93,7 +93,7 @@ def search_value(value: int):
 
 
 # -----------------------------
-# REINICIAR ÁRBOL
+# REINICIAR ARBOL
 # -----------------------------
 @router.delete("/reset")
 def reset_tree():
@@ -102,7 +102,7 @@ def reset_tree():
     avl = AVL()
 
     return {
-        "message": "Árbol reiniciado"
+        "message": "Arbol reiniciado"
     }
 
 
@@ -150,7 +150,7 @@ def get_breadth_first():
     }
 
 
-# Obtener árbol con información de altura y balance
+# Obtener arbol con informacion de altura y balance
 @router.get("/tree-info")
 def get_tree_info():
 
@@ -172,7 +172,7 @@ def get_nodes_in_range(x_min: float, x_max: float, y_min: float, y_max: float):
     }
 
 
-# Obtener altura del árbol
+# Obtener altura del arbol
 @router.get("/height")
 def get_tree_height():
 
@@ -184,7 +184,7 @@ def get_tree_height():
     }
 
 
-# Obtener factor de balance de la raíz
+# Obtener factor de balance de la raiz
 @router.get("/balance-factor")
 def get_balance_factor():
 
@@ -214,7 +214,7 @@ def delete_value(value: int):
         }
 
 
-# Cancelar vuelo (eliminar subárbol)
+# Cancelar vuelo (eliminar subarbol)
 @router.delete("/cancel-flight/{value}")
 def cancel_flight(value: int):
 
@@ -222,7 +222,7 @@ def cancel_flight(value: int):
         avl.cancelar_vuelo(value)
 
         return {
-            "message": f"Vuelo {value} cancelado (subárbol eliminado)",
+            "message": f"Vuelo {value} cancelado (subarbol eliminado)",
             "tree": serialize(avl.getRoot())
         }
     except Exception as e:
@@ -232,7 +232,7 @@ def cancel_flight(value: int):
         }
 
 
-# Undo operación
+# Undo operacion
 @router.post("/undo")
 def undo_operation():
 
@@ -240,12 +240,12 @@ def undo_operation():
 
     return {
         "success": success,
-        "message": "Operación deshecha" if success else "No hay operaciones para deshacer",
+        "message": "Operacion deshecha" if success else "No hay operaciones para deshacer",
         "tree": serialize(avl.getRoot())
     }
 
 
-# Redo operación
+# Redo operacion
 @router.post("/redo")
 def redo_operation():
 
@@ -253,12 +253,12 @@ def redo_operation():
 
     return {
         "success": success,
-        "message": "Operación rehecha" if success else "No hay operaciones para rehacer",
+        "message": "Operacion rehecha" if success else "No hay operaciones para rehacer",
         "tree": serialize(avl.getRoot())
     }
 
 
-# Cargar árbol desde JSON
+# Cargar arbol desde JSON
 @router.post("/load-json")
 async def load_from_json(file: UploadFile = File(...), load_type: str = "topology"):
 
@@ -267,79 +267,79 @@ async def load_from_json(file: UploadFile = File(...), load_type: str = "topolog
     try:
         # Leer contenido del archivo
         content = await file.read()
-        data = json.loads(content.decode('utf-8'))
+        data = json.loads(content.decode("utf-8"))
 
-        # Reiniciar árboles
+        # Reiniciar arboles
         avl = AVL()
         bst = BST()
 
         if load_type == "topology":
-            # Cargar respetando topología del ModoTopología.json
+            # Cargar respetando topologia del ModoTopologia.json
             def build_tree_from_topology(node_data):
                 if node_data is None or not isinstance(node_data, dict):
                     return None
 
-                # Crear nodo con el código como valor
-                node = Node(node_data.get('codigo'))
+                # Crear nodo con el codigo como valor
+                node = Node(node_data.get("codigo"))
                 # Guardar todos los datos del vuelo
                 node.setDatos(node_data)
 
                 # Procesar hijo izquierdo
-                if 'izquierdo' in node_data and node_data['izquierdo']:
-                    left_child = build_tree_from_topology(node_data['izquierdo'])
+                if "izquierdo" in node_data and node_data["izquierdo"]:
+                    left_child = build_tree_from_topology(node_data["izquierdo"])
                     if left_child:
                         node.setLeftChild(left_child)
                         left_child.setParent(node)
 
                 # Procesar hijo derecho
-                if 'derecho' in node_data and node_data['derecho']:
-                    right_child = build_tree_from_topology(node_data['derecho'])
+                if "derecho" in node_data and node_data["derecho"]:
+                    right_child = build_tree_from_topology(node_data["derecho"])
                     if right_child:
                         node.setRightChild(right_child)
                         right_child.setParent(node)
 
                 return node
 
-            # El archivo ModoTopología.json tiene la estructura del árbol directamente
+            # El archivo ModoTopologia.json tiene la estructura del arbol directamente
             avl.root = build_tree_from_topology(data)
 
         elif load_type == "insertion":
-            # Cargar mediante inserción progresiva del ModoInserción.json
-            if 'vuelos' in data:
+            # Cargar mediante insercion progresiva del ModoInsercion.json
+            if "vuelos" in data:
                 import asyncio
 
-                # Extraer códigos numéricos (sin "SB") y ordenarlos
+                # Extraer codigos numericos (sin "SB") y ordenarlos
                 flights = []
-                for flight_data in data['vuelos']:
-                    codigo_str = flight_data.get('codigo', '')
-                    # Extraer solo el número después de "SB"
-                    if codigo_str.startswith('SB'):
+                for flight_data in data["vuelos"]:
+                    codigo_str = flight_data.get("codigo", "")
+                    # Extraer solo el numero despues de "SB"
+                    if codigo_str.startswith("SB"):
                         try:
-                            flight_number = int(codigo_str[2:])  # Remover "SB" y convertir a int
+                            flight_number = int(codigo_str[2:])
                             flights.append((flight_number, flight_data))
                         except ValueError:
-                            continue  # Saltar si no se puede convertir
+                            continue
 
-                # Ordenar por código numérico
+                # Ordenar por codigo numerico
                 flights.sort(key=lambda x: x[0])
 
-                # Insertar uno por uno con delay para visualización
+                # Insertar uno por uno con delay para visualizacion
                 for flight_number, flight_data in flights:
                     # Insertar en AVL
                     node = Node(flight_number)
                     node.setDatos(flight_data)
                     avl.insert(node)
 
-                    # Insertar en BST para comparación
+                    # Insertar en BST para comparacion
                     bst_node = Node(flight_number)
                     bst_node.setDatos(flight_data)
                     bst.insert(bst_node)
 
-                    # Pequeño delay para visualización progresiva (1 segundo)
+                    # Pequeno delay para visualizacion progresiva (1 segundo)
                     await asyncio.sleep(1)
 
         return {
-            "message": f"Árbol cargado desde JSON ({load_type})",
+            "message": f"Arbol cargado desde JSON ({load_type})",
             "load_type": load_type,
             "comparison": {
                 "avl": {
@@ -363,7 +363,7 @@ async def load_from_json(file: UploadFile = File(...), load_type: str = "topolog
         raise HTTPException(status_code=400, detail=f"Error al cargar JSON: {str(e)}")
 
 
-# Exportar árbol a JSON
+# Exportar arbol a JSON
 @router.get("/export-json")
 def export_to_json():
 
@@ -373,8 +373,8 @@ def export_to_json():
 
         # Obtener los datos del nodo (origen, destino, etc.)
         datos = node.getDatos() or {}
-        
-        # Construir el nodo con la estructura de ModoTopología.json
+
+        # Construir el nodo con la estructura de ModoTopologia.json
         node_data = {
             "codigo": node.getValue(),
             "origen": datos.get("origen", ""),
@@ -392,7 +392,7 @@ def export_to_json():
         }
         return node_data
 
-    # Exportar directamente el árbol con la estructura de topología
+    # Exportar directamente el arbol con la estructura de topologia
     tree_data = serialize_to_topology(avl.getRoot())
 
     return JSONResponse(
@@ -401,7 +401,7 @@ def export_to_json():
     )
 
 
-# Obtener comparación de árboles
+# Obtener comparacion de arboles
 @router.get("/comparison")
 def get_tree_comparison():
 
@@ -425,21 +425,3 @@ def get_tree_comparison():
             "bst": bst.serialize()
         }
     }
-
-
-# Eliminar nodo
-@router.delete("/delete/{value}")
-def delete_value(value: int):
-
-    try:
-        avl.delete(value)
-        
-        return {
-            "message": f"Nodo {value} eliminado correctamente",
-            "tree": serialize(avl.getRoot())
-        }
-    except Exception as e:
-        return {
-            "error": str(e),
-            "message": f"No se pudo eliminar el nodo {value}"
-        }

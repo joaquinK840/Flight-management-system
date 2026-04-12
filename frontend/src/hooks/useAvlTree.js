@@ -1,23 +1,23 @@
 import { useEffect, useState } from 'react'
 import { LOAD_MODE_INSERTION, LOAD_MODE_TOPOLOGY } from '../models/treeModes'
 import {
-    cancelFlight,
-    deleteValue,
-    exportToJSON,
-    getBalanceFactor,
-    getBreadthFirst,
-    getInOrder,
-    getPostOrder,
-    getPreOrder,
-    getTree,
-    getTreeComparison,
-    getTreeHeight,
-    insertValue,
-    loadFromJSON,
-    redoOperation,
-    resetTree,
-    searchValue,
-    undoOperation
+  cancelFlight,
+  deleteValue,
+  exportToJSON,
+  getBalanceFactor,
+  getBreadthFirst,
+  getInOrder,
+  getPostOrder,
+  getPreOrder,
+  getTree,
+  getTreeComparison,
+  getTreeHeight,
+  insertValue,
+  loadFromJSON,
+  redoOperation,
+  resetTree,
+  searchValue,
+  undoOperation
 } from '../services/avlService'
 import { parseInsertionFlights } from '../utils/treeHelpers'
 
