@@ -29,6 +29,12 @@ class BST:
         else:
             _insert_node(self.root, new_node)
 
+    def insert_node(self, node: Node):
+        if self.root is None:
+            self.root = node
+        else:
+            _insert_node(self.root, node)
+
     def delete(self, value: int):
         if self.root is None:
             raise ValueError("Cannot delete from an empty tree.")

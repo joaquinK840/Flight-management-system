@@ -1,7 +1,8 @@
 class Node:
 
-    def __init__(self, value):
+    def __init__(self, value, datos=None):
         self.value = value
+        self.datos = datos
         self.parent = None
         self.leftChild = None
         self.rightChild = None
@@ -26,3 +27,9 @@ class Node:
 
     def getValue(self):
         return self.value
+
+    def setDatos(self, datos):
+        self.datos = datos
+
+    def getDatos(self):
+        return self.datos

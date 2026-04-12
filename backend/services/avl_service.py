@@ -1,10 +1,16 @@
 from core.structures.avl_tree.tree import AVL
+from core.structures.bst_tree.tree import BST
 from core.structures.node.node import Node
 from services.serialize_tree import serialize_tree
 
 class TreeService:
-    def __init__(self):
-        self.avl = AVL()
+    def __init__(self, avl=None, bst=None):
+        self.avl = avl or AVL()
+        self.bst = bst or BST()
+
+    def set_trees(self, avl, bst):
+        self.avl = avl
+        self.bst = bst
 
     def insert_node(self, value: int):
         node = Node(value)
@@ -52,6 +58,7 @@ class TreeService:
 
     def reset_tree(self):
         self.avl = AVL()
+        self.bst = BST()
         return {
             "message": "Árbol reiniciado"
         }
