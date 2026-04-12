@@ -83,3 +83,36 @@ export const eliminateLeastProfitable = async () => {
         throw error;
     }
 };
+
+export const exportTree = async () => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/avl/export`);
+        if (!response.ok) {
+            throw new Error('Error al exportar el árbol');
+        }
+        
+        // Obtener el blob (archivo)
+        const blob = await response.blob();
+        
+        // Crear URL temporal
+        const url = window.URL.createObjectURL(blob);
+        
+        // Crear link temporal
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'skybalance_avl.json';
+        
+        // Simular clic para descargar
+        document.body.appendChild(link);
+        link.click();
+        
+        // Limpiar
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        
+        return true;
+    } catch (error) {
+        console.error('Error en exportTree:', error);
+        throw error;
+    }
+};

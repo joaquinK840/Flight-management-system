@@ -1,8 +1,11 @@
 from fastapi import APIRouter, UploadFile, HTTPException, File, Depends
+from fastapi.responses import FileResponse
+import json
+import io
 from core.structures.avl_tree.tree import AVL
 from core.structures.node.node import Node
 from services.metrics import get_metrics
-from services.json_manager import load_trees_from_json
+from services.json_manager import load_trees_from_json, export_tree_to_json
 from services.serialize_tree import serialize_tree
 from services.stress_mode_service import rebalance_tree_postorder, audit_tree
 
@@ -363,3 +366,70 @@ def audit_tree_integrity():
     result = audit_tree(avl)
     result["status"] = "success"
     return result
+
+
+# ========================================
+# EXPORTAR ÁRBOL A JSON
+# ========================================
+@router.get("/export")
+def export_tree_endpoint():
+    """
+    Exporta el árbol AVL completo a un archivo JSON.
+    
+    Guarda la estructura real del árbol (no solo lista de vuelos).
+    El JSON exportado puede ser recargado exactamente con POST /avl/load-file
+    (idempotencia: exportar + reimportar produce el mismo árbol).
+    
+    Returns:
+        FileResponse (JSON file):
+            filename="skybalance_avl.json"
+            
+            Contenido:
+            {
+              "type": "topology",
+              "depth_limit": 3,
+              "rotation_counts": {"LL": 2, "RR": 1, "LR": 0, "RL": 0},
+              "mass_cancellation_count": 0,
+              "root": {
+                "codigo": 100,
+                "height": 3,
+                "balance_factor": 0,
+                "profundidad": 0,
+                "datos": {...},
+                "left": {...},
+                "right": {...}
+              }
+            }
+            
+    HTTP 400:
+        Si el árbol está vacío
+    HTTP 500:
+        Si hay error exportando
+    """
+    try:
+        # Verificar que el árbol no esté vacío
+        if avl.getRoot() is None:
+            raise HTTPException(status_code=400, detail="El árbol está vacío, no se puede exportar")
+        
+        # Exportar árbol a estructura JSON
+        export_data = export_tree_to_json(avl)
+        
+        # Convertir a JSON string
+        json_str = json.dumps(export_data, indent=2, ensure_ascii=False)
+        
+        # Crear BytesIO para simular archivo
+        json_bytes = json_str.encode('utf-8')
+        
+        # Retornar como FileResponse para descarga
+        return FileResponse(
+            io.BytesIO(json_bytes),
+            media_type="application/json",
+            headers={
+                "Content-Disposition": "attachment; filename=skybalance_avl.json"
+            }
+        )
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error exportando árbol: {str(e)}")

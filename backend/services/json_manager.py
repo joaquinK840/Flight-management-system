@@ -168,3 +168,82 @@ def load_trees_from_json(json_content: str) -> tuple:
 
     else:
         raise ValueError(f"Tipo de carga no soportado: {load_type}. Usar 'topology' o 'insertion'")
+
+
+def export_tree_to_json(tree) -> dict:
+    """
+    Exporta el árbol AVL completo a una estructura JSON.
+    Guarda la estructura real del árbol (no solo lista de vuelos).
+    
+    El JSON exportado puede ser recargado exactamente con POST /avl/load-file
+    (idempotencia: exportar + reimportar produce el mismo árbol).
+    
+    Args:
+        tree: Instancia de árbol AVL
+        
+    Returns:
+        dict: Estructura JSON con:
+            - type: "topology"
+            - depth_limit: int
+            - rotation_counts: {LL, RR, LR, RL}
+            - mass_cancellation_count: int
+            - root: nodo raíz serializado recursivamente
+    """
+    def serialize_node_recursive(node, current_depth=0):
+        """
+        Serializa un nodo y sus hijos recursivamente.
+        
+        Args:
+            node: Nodo a serializar
+            current_depth: Profundidad actual (para tracking)
+            
+        Returns:
+            dict: Nodo serializado con estructura completa
+        """
+        if node is None:
+            return None
+        
+        # Obtener datos del nodo
+        node_datos = node.getDatos() if node.getDatos() else {}
+        codigo = node.getValue()
+        altura = node.getHeight() if hasattr(node, 'getHeight') else node.height
+        
+        # Calcular balance factor
+        left_child = node.getLeftChild() if hasattr(node, 'getLeftChild') else node.leftChild
+        right_child = node.getRightChild() if hasattr(node, 'getRightChild') else node.rightChild
+        
+        left_height = (left_child.getHeight() if hasattr(left_child, 'getHeight') else left_child.height) if left_child else 0
+        right_height = (right_child.getHeight() if hasattr(right_child, 'getHeight') else right_child.height) if right_child else 0
+        balance_factor = left_height - right_height
+        
+        # Serializar nodo con todos sus atributos
+        serialized_node = {
+            "codigo": codigo,
+            "height": altura,
+            "balance_factor": balance_factor,
+            "profundidad": current_depth,
+            "datos": node_datos,
+            "left": serialize_node_recursive(left_child, current_depth + 1),
+            "right": serialize_node_recursive(right_child, current_depth + 1)
+        }
+        
+        return serialized_node
+    
+    # Obtener raíz del árbol
+    root = tree.getRoot() if hasattr(tree, 'getRoot') else tree.root
+    
+    # Obtener metadatos del árbol
+    rotation_counts = getattr(tree, 'rotation_counts', {"LL": 0, "RR": 0, "LR": 0, "RL": 0})
+    mass_cancellation_count = getattr(tree, 'mass_cancellation_count', 0)
+    depth_limit = getattr(tree, 'depth_limit', 3)
+    
+    # Construir estructura JSON de exportación
+    export_data = {
+        "type": "topology",
+        "depth_limit": depth_limit,
+        "rotation_counts": rotation_counts,
+        "mass_cancellation_count": mass_cancellation_count,
+        "root": serialize_node_recursive(root, 0)
+    }
+    
+    return export_data

@@ -59,6 +59,7 @@ const HomePage = () => {
         onRedo={handleRedo}
         onReset={handleReset}
         onEliminateLeastProfitable={handleEliminateLeastProfitable}
+        onExport={handleExport}
       />
 
       <div style={{ marginBottom: '24px', padding: '20px', backgroundColor: '#f9f9f9', borderRadius: '16px', boxShadow: '0 10px 22px rgba(24, 110, 255, 0.08)' }}>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getTree, insertValue, searchValue, resetTree, getMetrics, eliminateLeastProfitable } from '../services/avlService'
+import { getTree, insertValue, searchValue, resetTree, getMetrics, eliminateLeastProfitable, exportTree } from '../services/avlService'
 
 const useAvlTree = () => {
   const [tree, setTree] = useState(null)
@@ -109,8 +109,14 @@ const useAvlTree = () => {
     setTraversalResult([1, 2, 3, 4, 5])
   }
 
-  const handleExport = () => {
-    console.log('Exportar datos')
+  const handleExport = async () => {
+    try {
+      await exportTree()
+      alert('✅ Árbol exportado exitosamente como skybalance_avl.json')
+    } catch (err) {
+      console.error('Error exportando árbol:', err)
+      alert(`❌ Error exportando árbol: ${err.message}`)
+    }
   }
 
   const handleShowComparison = (show) => {

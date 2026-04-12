@@ -9,7 +9,8 @@ const TreeOperations = ({
   onUndo,
   onRedo,
   onReset,
-  onEliminateLeastProfitable
+  onEliminateLeastProfitable,
+  onExport
 }) => {
   return (
     <div style={{
@@ -57,6 +58,9 @@ const TreeOperations = ({
         </button>
         <button onClick={onReset} style={{ padding: '10px 20px', backgroundColor: '#f44336', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
           🔄 Reiniciar
+        </button>
+        <button onClick={onExport} style={{ padding: '10px 20px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
+          💾 Exportar
         </button>
       </div>
     </div>
