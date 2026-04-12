@@ -75,7 +75,8 @@ const TreeViewer = ({ tree, title = 'Estructura del Árbol AVL' }) => {
     const displayValue = node.codigo || node.value || '?'
     const routeLabel = origen && destino ? `${origen} → ${destino}` : ''
     const precioFinal = typeof node.precioFinal === 'number' ? node.precioFinal : null
-    const alertaActiva = Boolean(node.alerta && node.alerta !== 'normal')
+    const alertaValue = node.alerta ?? node.datos?.alerta
+    const alertaActiva = Boolean(alertaValue)
     const tooltip = [
       `Codigo: ${displayValue}`,
       `Origen: ${origen || '-'}`,
@@ -107,7 +108,6 @@ const TreeViewer = ({ tree, title = 'Estructura del Árbol AVL' }) => {
           }}
         >
           <div style={styles.nodeValue}>
-            {isNodoCritico && <span style={styles.warningIcon}>⚠️</span>}
             <span style={styles.flightCode}>{displayValue}</span>
           </div>
           {routeLabel && (
