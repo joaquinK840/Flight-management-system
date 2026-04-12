@@ -1,0 +1,101 @@
+import TraversalControls from '../components/controls/TraversalControls'
+import TreeOperations from '../components/controls/TreeOperations'
+import UploadControls from '../components/controls/UploadControls'
+import TreeComparison from '../components/TreeComparison'
+import TreeInfo from '../components/TreeInfo'
+import TreeViewer from '../components/TreeViewer'
+import useAvlTree from '../hooks/useAvlTree'
+
+const HomePage = () => {
+  const {
+    tree,
+    bstTree,
+    value,
+    setValue,
+    searchResult,
+    treeHeight,
+    balanceFactor,
+    traversalMode,
+    traversalResult,
+    comparisonData,
+    showComparison,
+    handleFileLoad,
+    handleInsert,
+    handleDelete,
+    handleCancelFlight,
+    handleSearch,
+    handleUndo,
+    handleRedo,
+    handleReset,
+    handleTraversal,
+    handleExport,
+    handleShowComparison,
+    handleDepthLimitChange
+  } = useAvlTree()
+
+  return (
+    <div className="App" style={{ padding: '20px 24px', maxWidth: '1200px', margin: '0 auto' }}>
+      <h1 style={{ textAlign: 'center', marginBottom: '24px' }}>🌲 Árbol AVL - Sistema de Gestión de Vuelos</h1>
+
+      <UploadControls
+        onFileLoad={handleFileLoad}
+        onExport={handleExport}
+        onDepthLimitChange={handleDepthLimitChange}
+      />
+
+      <TreeOperations
+        value={value}
+        onValueChange={setValue}
+        onInsert={handleInsert}
+        onDelete={handleDelete}
+        onCancelFlight={handleCancelFlight}
+        onSearch={handleSearch}
+        onShowComparison={() => handleShowComparison()}
+        onUndo={handleUndo}
+        onRedo={handleRedo}
+        onReset={handleReset}
+      />
+
+      <div style={{ marginBottom: '24px', padding: '20px', backgroundColor: '#f9f9f9', borderRadius: '16px', boxShadow: '0 10px 22px rgba(24, 110, 255, 0.08)' }}>
+        <TraversalControls onTraversal={handleTraversal} />
+      </div>
+
+      {tree && <TreeInfo tree={tree} treeHeight={treeHeight} balanceFactor={balanceFactor} />}
+
+      {searchResult && (
+        <div style={{ marginBottom: '24px', padding: '18px', backgroundColor: '#1f2833', color: 'white', borderRadius: '14px' }}>
+          <h3 style={{ marginTop: 0 }}>Resultado de búsqueda</h3>
+          <p><strong>Valor:</strong> {searchResult.value}</p>
+          <p><strong>Encontrado:</strong> {searchResult.found ? '✓ Sí' : '✗ No'}</p>
+        </div>
+      )}
+
+      {traversalResult && (
+        <div style={{ marginBottom: '24px', padding: '18px', backgroundColor: '#FFF3E0', borderRadius: '14px' }}>
+          <h3 style={{ marginTop: 0 }}>
+            Recorrido {
+              traversalMode === 'pre' ? 'Preorden' :
+              traversalMode === 'in' ? 'Inorden' :
+              traversalMode === 'post' ? 'Postorden' :
+              'Por Niveles'
+            }
+          </h3>
+          <p style={{ wordBreak: 'break-all', fontFamily: 'monospace' }}>
+            {Array.isArray(traversalResult) ? traversalResult.join(' → ') : traversalResult}
+          </p>
+        </div>
+      )}
+
+      {showComparison && comparisonData && (
+        <TreeComparison data={comparisonData} onClose={() => handleShowComparison(false)} />
+      )}
+
+      <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', justifyContent: 'center' }}>
+        <TreeViewer tree={tree} title="Árbol AVL" />
+        {showComparison && bstTree && <TreeViewer tree={bstTree} title="Árbol BST (Comparación)" />}
+      </div>
+    </div>
+  )
+}
+
+export default HomePage
