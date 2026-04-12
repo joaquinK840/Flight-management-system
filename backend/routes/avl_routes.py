@@ -3,6 +3,7 @@ from fastapi.responses import FileResponse
 import json
 import io
 from core.structures.avl_tree.tree import AVL
+from core.structures.avl_tree import traversal
 from core.structures.node.node import Node
 from services.metrics import get_metrics
 from services.json_manager import load_trees_from_json, export_tree_to_json
@@ -433,3 +434,54 @@ def export_tree_endpoint():
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error exportando árbol: {str(e)}")
+
+
+# ========================================
+# RECORRIDOS DEL ÁRBOL
+# ========================================
+@router.get("/traversal/{mode}")
+def traversal_endpoint(mode: str):
+    """
+    Realiza un recorrido del árbol AVL según el modo especificado.
+    
+    Args:
+        mode (str): Tipo de recorrido
+            - 'pre': preorden (raíz, izq, der)
+            - 'in': inorden (izq, raíz, der)
+            - 'post': postorden (izq, der, raíz)
+            - 'level': por niveles (BFS)
+    
+    Returns:
+        dict: { "mode": mode, "result": [lista de valores] }
+    
+    HTTP 400:
+        Si el árbol está vacío o modo inválido
+    HTTP 500:
+        Si hay error durante el recorrido
+    """
+    try:
+        if avl.getRoot() is None:
+            raise HTTPException(status_code=400, detail="El árbol está vacío")
+        
+        mode_lower = mode.lower().strip()
+        
+        if mode_lower == 'pre':
+            result = traversal.pre_order(avl.getRoot())
+        elif mode_lower == 'in':
+            result = traversal.in_order(avl.getRoot())
+        elif mode_lower == 'post':
+            result = traversal.post_order(avl.getRoot())
+        elif mode_lower == 'level':
+            result = traversal.breadth_first_traversal(avl.getRoot())
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Modo inválido '{mode}'. Usa: 'pre', 'in', 'post', 'level'"
+            )
+        
+        return {"mode": mode_lower, "result": result}
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error en recorrido: {str(e)}")

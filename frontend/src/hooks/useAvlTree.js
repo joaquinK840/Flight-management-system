@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getTree, insertValue, searchValue, resetTree, getMetrics, eliminateLeastProfitable, exportTree, loadFile, insertFlight, deleteFlight, cancelFlight, undoOperation, redoOperation } from '../services/avlService'
+import { getTree, insertValue, searchValue, resetTree, getMetrics, eliminateLeastProfitable, exportTree, loadFile, insertFlight, deleteFlight, cancelFlight, undoOperation, redoOperation, getTraversal } from '../services/avlService'
 
 const useAvlTree = () => {
   const [tree, setTree] = useState(null)
@@ -176,9 +176,14 @@ const useAvlTree = () => {
   }
 
   const handleTraversal = async (mode) => {
-    console.log('Recorrido:', mode)
-    setTraversalMode(mode)
-    setTraversalResult([1, 2, 3, 4, 5])
+    try {
+      const data = await getTraversal(mode)
+      setTraversalMode(data.mode)
+      setTraversalResult(data.result)
+    } catch (err) {
+      console.error('Error en recorrido:', err)
+      alert(`❌ Error en recorrido: ${err.message}`)
+    }
   }
 
   const handleExport = async () => {

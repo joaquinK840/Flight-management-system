@@ -210,3 +210,18 @@ export const redoOperation = async () => {
         throw error;
     }
 };
+
+export const getTraversal = async (mode) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/avl/traversal/${mode}`, {
+            method: 'GET',
+        });
+        if (!response.ok) {
+            throw new Error('Error obteniendo recorrido');
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error en getTraversal:', error);
+        throw error;
+    }
+};
