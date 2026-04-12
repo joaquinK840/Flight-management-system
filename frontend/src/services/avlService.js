@@ -244,3 +244,61 @@ export const updateDepthLimit = async (limit) => {
         throw error;
     }
 };
+
+export const enableStressMode = async () => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/avl/stress-mode/enable`, {
+            method: 'POST',
+        });
+        if (!response.ok) {
+            throw new Error('Error al habilitar modo estrés');
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error en enableStressMode:', error);
+        throw error;
+    }
+};
+
+export const disableStressMode = async () => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/avl/stress-mode/disable`, {
+            method: 'POST',
+        });
+        if (!response.ok) {
+            throw new Error('Error al deshabilitar modo estrés');
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error en disableStressMode:', error);
+        throw error;
+    }
+};
+
+export const rebalanceTree = async () => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/avl/rebalance`, {
+            method: 'POST',
+        });
+        if (!response.ok) {
+            throw new Error('Error al rebalancear');
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error en rebalanceTree:', error);
+        throw error;
+    }
+};
+
+export const auditTree = async () => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/avl/audit`);
+        if (!response.ok) {
+            throw new Error('Error en auditoría');
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error en auditTree:', error);
+        throw error;
+    }
+};

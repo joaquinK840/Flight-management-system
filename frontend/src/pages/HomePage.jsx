@@ -21,6 +21,8 @@ const HomePage = () => {
     comparisonData,
     showComparison,
     metrics,
+    stressMode,
+    auditReport,
     handleFileLoad,
     handleInsert,
     handleDelete,
@@ -34,6 +36,10 @@ const HomePage = () => {
     handleShowComparison,
     handleDepthLimitChange,
     handleEliminateLeastProfitable,
+    handleEnableStress,
+    handleDisableStress,
+    handleRebalance,
+    handleAudit,
     refreshMetrics
   } = useAvlTree()
 
@@ -65,6 +71,94 @@ const HomePage = () => {
       <div style={{ marginBottom: '24px', padding: '20px', backgroundColor: '#f9f9f9', borderRadius: '16px', boxShadow: '0 10px 22px rgba(24, 110, 255, 0.08)' }}>
         <TraversalControls onTraversal={handleTraversal} />
       </div>
+
+      {stressMode && (
+        <div style={{ marginBottom: '24px', padding: '18px', backgroundColor: '#d32f2f', color: 'white', borderRadius: '14px', fontWeight: 'bold', fontSize: '16px' }}>
+          ⚠️ MODO ESTRÉS ACTIVO - Sin balanceo automático
+        </div>
+      )}
+
+      <div style={{ marginBottom: '24px', padding: '20px', backgroundColor: stressMode ? '#fff3e0' : '#e3f2fd', borderRadius: '16px', boxShadow: '0 10px 22px rgba(24, 110, 255, 0.08)' }}>
+        <h3 style={{ marginTop: 0 }}>{stressMode ? '🔥' : '✅'} Modo Estrés</h3>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          {!stressMode ? (
+            <button
+              onClick={handleEnableStress}
+              style={{
+                padding: '10px 16px',
+                backgroundColor: '#d32f2f',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                fontSize: '14px'
+              }}
+            >
+              🔥 Activar Modo Estrés
+            </button>
+          ) : (
+            <button
+              onClick={handleDisableStress}
+              style={{
+                padding: '10px 16px',
+                backgroundColor: '#4caf50',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                fontSize: '14px'
+              }}
+            >
+              ✅ Modo Normal
+            </button>
+          )}
+          <button
+            onClick={handleRebalance}
+            disabled={stressMode}
+            style={{
+              padding: '10px 16px',
+              backgroundColor: stressMode ? '#ccc' : '#2196f3',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: stressMode ? 'not-allowed' : 'pointer',
+              fontWeight: 'bold',
+              fontSize: '14px',
+              opacity: stressMode ? 0.6 : 1
+            }}
+          >
+            ⚖️ Rebalancear
+          </button>
+          {stressMode && (
+            <button
+              onClick={handleAudit}
+              style={{
+                padding: '10px 16px',
+                backgroundColor: '#ff9800',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                fontSize: '14px'
+              }}
+            >
+              🔍 Auditar AVL
+            </button>
+          )}
+        </div>
+      </div>
+
+      {auditReport && (
+        <div style={{ marginBottom: '24px', padding: '18px', backgroundColor: '#f5f5f5', borderRadius: '14px', border: '2px solid #ff9800' }}>
+          <h3 style={{ marginTop: 0 }}>Reporte de Auditoría</h3>
+          <pre style={{ backgroundColor: '#fff', padding: '12px', borderRadius: '8px', overflow: 'auto', fontSize: '12px' }}>
+            {JSON.stringify(auditReport, null, 2)}
+          </pre>
+        </div>
+      )}
 
       {tree && <TreeInfo tree={tree} treeHeight={treeHeight} balanceFactor={balanceFactor} />}
 

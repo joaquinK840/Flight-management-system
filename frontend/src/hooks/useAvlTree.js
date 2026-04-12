@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getTree, insertValue, searchValue, resetTree, getMetrics, eliminateLeastProfitable, exportTree, loadFile, insertFlight, deleteFlight, cancelFlight, undoOperation, redoOperation, getTraversal, updateDepthLimit } from '../services/avlService'
+import { getTree, insertValue, searchValue, resetTree, getMetrics, eliminateLeastProfitable, exportTree, loadFile, insertFlight, deleteFlight, cancelFlight, undoOperation, redoOperation, getTraversal, updateDepthLimit, enableStressMode, disableStressMode, rebalanceTree, auditTree } from '../services/avlService'
 
 const useAvlTree = () => {
   const [tree, setTree] = useState(null)
@@ -13,6 +13,8 @@ const useAvlTree = () => {
   const [comparisonData, setComparisonData] = useState(null)
   const [showComparison, setShowComparison] = useState(false)
   const [metrics, setMetrics] = useState(null)
+  const [stressMode, setStressMode] = useState(false)
+  const [auditReport, setAuditReport] = useState(null)
 
   useEffect(() => {
     loadTree()
@@ -233,6 +235,61 @@ const useAvlTree = () => {
     }
   }
 
+  const handleEnableStress = async () => {
+    try {
+      await enableStressMode()
+      setStressMode(true)
+      setAuditReport(null)
+      alert('✅ Modo estrés habilitado')
+    } catch (err) {
+      console.error('Error habilitando modo estrés:', err)
+      alert(`❌ Error: ${err.message}`)
+    }
+  }
+
+  const handleDisableStress = async () => {
+    try {
+      await disableStressMode()
+      setStressMode(false)
+      setAuditReport(null)
+      alert('✅ Modo estrés deshabilitado')
+    } catch (err) {
+      console.error('Error deshabilitando modo estrés:', err)
+      alert(`❌ Error: ${err.message}`)
+    }
+  }
+
+  const handleRebalance = async () => {
+    if (stressMode) {
+      alert('⚠️ No puedes rebalancear en modo estrés. Deshabilita el modo primero.')
+      return
+    }
+    try {
+      const result = await rebalanceTree()
+      setTree(result.tree)
+      const rotations = result.rotations_applied || 0
+      alert(`✅ Árbol rebalanceado\n\nRotaciones aplicadas: ${rotations}`)
+      await refreshMetrics()
+    } catch (err) {
+      console.error('Error rebalanceando:', err)
+      alert(`❌ Error: ${err.message}`)
+    }
+  }
+
+  const handleAudit = async () => {
+    if (!stressMode) {
+      alert('⚠️ La auditoría solo está disponible en modo estrés')
+      return
+    }
+    try {
+      const result = await auditTree()
+      setAuditReport(result)
+    } catch (err) {
+      console.error('Error en auditoría:', err)
+      alert(`❌ Error: ${err.message}`)
+    }
+  }
+
   return {
     tree,
     bstTree,
@@ -246,6 +303,8 @@ const useAvlTree = () => {
     comparisonData,
     showComparison,
     metrics,
+    stressMode,
+    auditReport,
     handleFileLoad,
     handleInsert,
     handleDelete,
@@ -259,6 +318,10 @@ const useAvlTree = () => {
     handleShowComparison,
     handleDepthLimitChange,
     handleEliminateLeastProfitable,
+    handleEnableStress,
+    handleDisableStress,
+    handleRebalance,
+    handleAudit,
     refreshMetrics
   }
 }
