@@ -4,6 +4,7 @@ import UploadControls from '../components/controls/UploadControls'
 import TreeComparison from '../components/TreeComparison'
 import TreeInfo from '../components/TreeInfo'
 import TreeViewer from '../components/TreeViewer'
+import MetricsPanel from '../components/MetricsPanel'
 import useAvlTree from '../hooks/useAvlTree'
 
 const HomePage = () => {
@@ -19,6 +20,7 @@ const HomePage = () => {
     traversalResult,
     comparisonData,
     showComparison,
+    metrics,
     handleFileLoad,
     handleInsert,
     handleDelete,
@@ -30,7 +32,8 @@ const HomePage = () => {
     handleTraversal,
     handleExport,
     handleShowComparison,
-    handleDepthLimitChange
+    handleDepthLimitChange,
+    refreshMetrics
   } = useAvlTree()
 
   return (
@@ -89,6 +92,8 @@ const HomePage = () => {
       {showComparison && comparisonData && (
         <TreeComparison data={comparisonData} onClose={() => handleShowComparison(false)} />
       )}
+
+      <MetricsPanel metrics={metrics} refreshMetrics={refreshMetrics} />
 
       <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', justifyContent: 'center' }}>
         <TreeViewer tree={tree} title="Árbol AVL" />

@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 from core.structures.avl_tree.tree import AVL
 from core.structures.node.node import Node
+from services.metrics import get_metrics
 
 router = APIRouter(prefix="/avl", tags=["AVL Tree"])
 
@@ -85,3 +86,12 @@ def reset_tree():
     return {
         "message": "Árbol reiniciado"
     }
+
+
+# -----------------------------
+# OBTENER MÉTRICAS
+# -----------------------------
+@router.get("/metrics")
+def get_tree_metrics():
+    """Get real-time analytics for the AVL tree."""
+    return get_metrics(avl)

@@ -55,3 +55,16 @@ export const resetTree = async () => {
         throw error;
     }
 };
+
+export const getMetrics = async () => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/avl/metrics`);
+        if (!response.ok) {
+            throw new Error('Error al obtener las métricas');
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error en getMetrics:', error);
+        throw error;
+    }
+};
