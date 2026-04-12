@@ -116,3 +116,14 @@ export const exportTree = async () => {
         throw error;
     }
 };
+
+export const loadFile = async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await fetch(`${API_BASE_URL}/avl/load-file`, {
+        method: 'POST',
+        body: formData  // NO poner Content-Type header, fetch lo setea solo
+    });
+    if (!response.ok) throw new Error(await response.text());
+    return response.json();
+};

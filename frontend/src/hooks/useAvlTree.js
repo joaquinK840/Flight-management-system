@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getTree, insertValue, searchValue, resetTree, getMetrics, eliminateLeastProfitable, exportTree } from '../services/avlService'
+import { getTree, insertValue, searchValue, resetTree, getMetrics, eliminateLeastProfitable, exportTree, loadFile } from '../services/avlService'
 
 const useAvlTree = () => {
   const [tree, setTree] = useState(null)
@@ -47,8 +47,28 @@ const useAvlTree = () => {
     return 1 + countNodes(node.left) + countNodes(node.right)
   }
 
-  const handleFileLoad = async (file) => {
-    console.log('Cargar archivo:', file)
+  const handleFileLoad = async (file, loadType) => {
+    if (!file) return
+    try {
+      const data = await loadFile(file)
+      
+      // Si hay comparación, mostrarla
+      if (data.comparison && data.comparison.avl_height) {
+        setBstTree(data.bst.tree)
+        setComparisonData({
+          avl: data.comparison.avl,
+          bst: data.comparison.bst
+        })
+        setShowComparison(true)
+      }
+      
+      // Actualizar árbol principal
+      setTree(data.avl.tree)
+      await refreshMetrics()
+    } catch (err) {
+      console.error('Error cargando archivo:', err)
+      alert(`❌ Error cargando archivo: ${err.message}`)
+    }
   }
 
   const handleInsert = async () => {
