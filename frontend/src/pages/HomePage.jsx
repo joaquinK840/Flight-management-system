@@ -6,6 +6,7 @@ import TreeInfo from '../components/TreeInfo'
 import TreeViewer from '../components/TreeViewer'
 import MetricsPanel from '../components/MetricsPanel'
 import VersionPanel from '../components/VersionPanel'
+import QueueControlComponent from '../components/QueueControlComponent'
 import useAvlTree from '../hooks/useAvlTree'
 
 const HomePage = () => {
@@ -194,6 +195,11 @@ const HomePage = () => {
       <MetricsPanel metrics={metrics} refreshMetrics={refreshMetrics} />
 
       <VersionPanel onVersionRestored={loadTree} />
+
+      <div style={{ marginBottom: '24px', padding: '20px', backgroundColor: '#f9f9f9', borderRadius: '16px', boxShadow: '0 10px 22px rgba(24, 110, 255, 0.08)' }}>
+        <h3 style={{ marginTop: 0, marginBottom: '16px' }}>📋 Cola de Inserción</h3>
+        <QueueControlComponent />
+      </div>
 
       <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', justifyContent: 'center' }}>
         <TreeViewer tree={tree} title="Árbol AVL" />

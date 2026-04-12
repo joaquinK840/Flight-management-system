@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './QueueControlComponent.css';
-import avlService from '../services/avlService';
+import { addToQueue, getPendingQueue, processOneFromQueue, processAllFromQueue, clearQueue } from '../services/avlService';
 
 /**
  * QueueControlComponent
@@ -39,8 +39,7 @@ const QueueControlComponent = () => {
 
   const fetchPendingFlights = async () => {
     try {
-      const response = await fetch('http://localhost:8000/queue/pending');
-      const data = await response.json();
+      const data = await getPendingQueue();
       if (data.status === 'success') {
         setPendingFlights(data.flights || []);
       }
@@ -96,30 +95,19 @@ const QueueControlComponent = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:8000/queue/add', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+      await addToQueue(formData);
+      showMsg(`✅ Vuelo ${formData.codigo} agregado a la cola`, 'success');
+      setFormData({
+        codigo: '',
+        origen: '',
+        destino: '',
+        horaSalida: '',
+        precioBase: '',
+        pasajeros: '',
+        prioridad: 1,
       });
-
-      const data = await response.json();
-
-      if (data.status === 'success') {
-        showMsg(`✅ Vuelo ${formData.codigo} agregado a la cola`, 'success');
-        setFormData({
-          codigo: '',
-          origen: '',
-          destino: '',
-          horaSalida: '',
-          precioBase: '',
-          pasajeros: '',
-          prioridad: 1,
-        });
-        setShowForm(false);
-        await fetchPendingFlights();
-      } else {
-        showMsg('Error al agregar vuelo', 'error');
-      }
+      setShowForm(false);
+      await fetchPendingFlights();
     } catch (error) {
       console.error('Error adding flight:', error);
       showMsg('Error al agregar vuelo', 'error');
@@ -138,11 +126,7 @@ const QueueControlComponent = () => {
 
     setProcessing(true);
     try {
-      const response = await fetch('http://localhost:8000/queue/process-one', {
-        method: 'POST',
-      });
-
-      const data = await response.json();
+      const data = await processOneFromQueue();
 
       if (data.status === 'success') {
         showMsg(
@@ -179,11 +163,7 @@ const QueueControlComponent = () => {
 
     setProcessing(true);
     try {
-      const response = await fetch('http://localhost:8000/queue/process-all', {
-        method: 'POST',
-      });
-
-      const data = await response.json();
+      const data = await processAllFromQueue();
 
       if (data.status === 'success') {
         setProcessResults(data.results || []);
@@ -215,11 +195,7 @@ const QueueControlComponent = () => {
   const handleClear = async () => {
     if (window.confirm('¿Estás seguro de que deseas limpiar la cola?')) {
       try {
-        const response = await fetch('http://localhost:8000/queue/clear', {
-          method: 'DELETE',
-        });
-
-        const data = await response.json();
+        const data = await clearQueue();
 
         if (data.status === 'success') {
           showMsg(`🗑️ Cola vaciada (${data.cleared_count} vuelos eliminados)`, 'success');

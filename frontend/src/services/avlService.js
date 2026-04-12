@@ -364,3 +364,157 @@ export const deleteVersion = async (name) => {
         throw error;
     }
 };
+
+export const addToQueue = async (flightData) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/queue/add`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(flightData),
+        });
+        if (!response.ok) {
+            throw new Error('Error agregando vuelo a la cola');
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error en addToQueue:', error);
+        throw error;
+    }
+};
+
+export const getPendingQueue = async () => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/queue/pending`);
+        if (!response.ok) {
+            throw new Error('Error obteniendo cola pendiente');
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error en getPendingQueue:', error);
+        throw error;
+    }
+};
+
+export const processOneFromQueue = async () => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/queue/process-one`, {
+            method: 'POST',
+        });
+        if (!response.ok) {
+            throw new Error('Error procesando vuelo de la cola');
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error en processOneFromQueue:', error);
+        throw error;
+    }
+};
+
+export const processAllFromQueue = async () => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/queue/process-all`, {
+            method: 'POST',
+        });
+        if (!response.ok) {
+            throw new Error('Error procesando cola completa');
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error en processAllFromQueue:', error);
+        throw error;
+    }
+};
+
+export const clearQueue = async () => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/queue/clear`, {
+            method: 'DELETE',
+        });
+        if (!response.ok) {
+            throw new Error('Error limpiando la cola');
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error en clearQueue:', error);
+        throw error;
+    }
+};
+
+export const addToQueue = async (flightData) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/queue/add`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(flightData),
+        });
+        if (!response.ok) {
+            throw new Error('Error agregando vuelo a la cola');
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error en addToQueue:', error);
+        throw error;
+    }
+};
+
+export const getPendingQueue = async () => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/queue/pending`);
+        if (!response.ok) {
+            throw new Error('Error obteniendo cola pendiente');
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error en getPendingQueue:', error);
+        throw error;
+    }
+};
+
+export const processOneFromQueue = async () => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/queue/process-one`, {
+            method: 'POST',
+        });
+        if (!response.ok) {
+            throw new Error('Error procesando vuelo de la cola');
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error en processOneFromQueue:', error);
+        throw error;
+    }
+};
+
+export const processAllFromQueue = async () => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/queue/process-all`, {
+            method: 'POST',
+        });
+        if (!response.ok) {
+            throw new Error('Error procesando cola completa');
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error en processAllFromQueue:', error);
+        throw error;
+    }
+};
+
+export const clearQueue = async () => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/queue/clear`, {
+            method: 'DELETE',
+        });
+        if (!response.ok) {
+            throw new Error('Error limpiando la cola');
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error en clearQueue:', error);
+        throw error;
+    }
+};
