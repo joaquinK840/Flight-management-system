@@ -327,7 +327,8 @@ export const saveVersion = async (name) => {
             body: JSON.stringify({ name }),
         });
         if (!response.ok) {
-            throw new Error('Error guardando versión');
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.detail || 'Error guardando versión');
         }
         return await response.json();
     } catch (error) {
@@ -338,11 +339,14 @@ export const saveVersion = async (name) => {
 
 export const restoreVersion = async (name) => {
     try {
-        const response = await fetch(`${API_BASE_URL}/versions/restore/${name}`, {
+        // Codificar el nombre para URL (espacios, caracteres especiales, etc)
+        const encodedName = encodeURIComponent(name);
+        const response = await fetch(`${API_BASE_URL}/versions/restore/${encodedName}`, {
             method: 'POST',
         });
         if (!response.ok) {
-            throw new Error('Error restaurando versión');
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.detail || 'Error restaurando versión');
         }
         return await response.json();
     } catch (error) {
@@ -353,11 +357,14 @@ export const restoreVersion = async (name) => {
 
 export const deleteVersion = async (name) => {
     try {
-        const response = await fetch(`${API_BASE_URL}/versions/${name}`, {
+        // Codificar el nombre para URL
+        const encodedName = encodeURIComponent(name);
+        const response = await fetch(`${API_BASE_URL}/versions/${encodedName}`, {
             method: 'DELETE',
         });
         if (!response.ok) {
-            throw new Error('Error eliminando versión');
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.detail || 'Error eliminando versión');
         }
         return await response.json();
     } catch (error) {

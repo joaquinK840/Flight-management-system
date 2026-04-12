@@ -6,10 +6,7 @@ Maneja operaciones FIFO de vuelos pendientes a procesar.
 from core.structures.queue.queue import Queue
 from core.structures.node.node import Node
 from core.structures.avl_tree.balance import get_balance_factor
-
-
-# Instancia global de la cola de vuelos
-flight_queue = Queue()
+from core.shared_instances import flight_queue  # Usar instancia compartida
 
 
 def add_flight_to_queue(flight_data: dict) -> dict:

@@ -9,11 +9,9 @@ from services.metrics import get_metrics
 from services.json_manager import load_trees_from_json, export_tree_to_json
 from services.serialize_tree import serialize_tree
 from services.stress_mode_service import rebalance_tree_postorder, audit_tree
+from core.shared_instances import avl, flight_queue  # Usar instancias compartidas
 
 router = APIRouter(prefix="/avl", tags=["AVL Tree"])
-
-# instancia global del árbol
-avl = AVL()
 
 # instancias globales para comparación AVL vs BST
 bst_global = None
@@ -132,17 +130,25 @@ def search_value(value: int):
     }
 
 
-# -----------------------------
-# REINICIAR ÁRBOL
-# -----------------------------
 @router.delete("/reset")
 def reset_tree():
-
-    global avl
-    avl = AVL()
+    """
+    Reinicia el árbol AVL Y la cola FIFO al estado inicial.
+    Limpia completamente el sistema como si fuera nuevo.
+    """
+    # Limpiar el árbol AVL
+    avl.root = None
+    avl.rotation_counts = {"LL": 0, "RR": 0, "LR": 0, "RL": 0}
+    avl.mass_cancellation_count = 0
+    avl.stress_mode = False
+    avl.depth_limit = 3
+    
+    # Limpiar la cola FIFO
+    flight_queue.clear()
 
     return {
-        "message": "Árbol reiniciado"
+        "message": "Árbol y cola reiniciados completamente",
+        "status": "success"
     }
 
 

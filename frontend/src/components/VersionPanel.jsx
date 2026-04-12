@@ -27,8 +27,19 @@ const VersionPanel = ({ onVersionRestored }) => {
 
     setLoading(true)
     try {
-      await saveVersion(versionName)
-      alert(`✅ Versión "${versionName}" guardada exitosamente`)
+      const response = await saveVersion(versionName)
+      
+      // Mostrar estadísticas del árbol y cola guardados
+      const stats = response.tree_stats
+      const queueInfo = stats && stats.queue_size > 0 
+        ? ` + Cola: ${stats.queue_size} vuelos`
+        : ''
+      
+      const message = stats
+        ? `✅ Versión "${versionName}" guardada\n📊 Árbol: ${stats.total_nodes} nodos, altura ${stats.height}${queueInfo}`
+        : `✅ Versión "${versionName}" guardada exitosamente`
+      
+      alert(message)
       setVersionName('')
       await loadVersions()
     } catch (err) {
@@ -46,11 +57,25 @@ const VersionPanel = ({ onVersionRestored }) => {
 
     setLoading(true)
     try {
-      await restoreVersion(name)
-      alert(`✅ Versión "${name}" restaurada exitosamente`)
+      const response = await restoreVersion(name)
+      
+      // Esperar un poco para asegurar que el backend esté listo
+      await new Promise(resolve => setTimeout(resolve, 300))
+      
+      // Mostrar información detallada
+      const metrics = response.metrics || {}
+      const queueInfo = response.queue_restored 
+        ? ` + Cola FIFO (${response.queue_size} vuelos)`
+        : ''
+      
+      const message = `✅ Versión "${name}" restaurada\n📊 Árbol: ${metrics.total_nodes} nodos, altura ${metrics.height}${queueInfo}`
+      
+      // Luego cargar el árbol actualizado desde el servidor
       if (onVersionRestored) {
-        onVersionRestored()
+        await onVersionRestored()
       }
+      
+      alert(message)
     } catch (err) {
       console.error('Error restaurando versión:', err)
       alert(`❌ Error restaurando versión: ${err.message}`)

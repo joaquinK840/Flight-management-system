@@ -4,11 +4,9 @@ from typing import Optional, Dict
 from services.tree_repository import TreeRepository
 from services.profitability_service import find_least_profitable, count_subtree_size
 from core.structures.avl_tree.tree import AVL
+from core.shared_instances import flight_repository, flight_queue  # Usar instancias compartidas
 
 router = APIRouter(prefix="/flights", tags=["Flights"])
-
-# Instancia global del repositorio
-flight_repository = TreeRepository(use_bst=False)
 
 
 # =====================
@@ -245,17 +243,30 @@ def toggle_stress_mode(enabled: bool):
 @router.delete("/reset")
 def reset_tree():
     """
-    Reinicia el árbol y limpia la pila de undo.
+    Reinicia el árbol, la cola FIFO y limpia la pila de undo.
+    Limpia completamente el sistema.
     
     Returns:
         Confirmación de reinicio
     """
-    global flight_repository
     try:
-        flight_repository = TreeRepository(use_bst=False)
+        # Limpiar el árbol AVL completamente
+        flight_repository.tree.root = None
+        flight_repository.tree.rotation_counts = {"LL": 0, "RR": 0, "LR": 0, "RL": 0}
+        flight_repository.tree.mass_cancellation_count = 0
+        flight_repository.tree.stress_mode = False
+        flight_repository.tree.depth_limit = 3
+        
+        # Limpiar la cola FIFO
+        flight_queue.clear()
+        
+        # Limpiar historial de undo/redo
+        flight_repository.undo_stack = []
+        flight_repository.redo_stack = []
+        
         return {
             "status": "success",
-            "message": "Árbol reiniciado"
+            "message": "Sistema reiniciado completamente: Árbol, cola y historial"
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

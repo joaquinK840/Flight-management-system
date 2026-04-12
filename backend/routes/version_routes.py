@@ -1,13 +1,14 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional
-from services.version_service import VersionService
-from routes.flight_routes import flight_repository
+import json
+from controllers.version_controller import VersionController
+from core.shared_instances import avl, flight_queue  # Usar instancias compartidas
 
 router = APIRouter(prefix="/versions", tags=["Versions"])
 
-# Instancia global del servicio de versiones
-version_service = VersionService()
+# Instancia global del controlador de versiones
+version_controller = VersionController()
 
 
 # =====================
@@ -28,8 +29,8 @@ class VersionRestoreRequest(BaseModel):
 @router.post("/save")
 def save_version(request: VersionSaveRequest):
     """
-    Guarda el estado actual del árbol como una nueva versión.
-    Serializa la estructura jerárquica completa del árbol (no solo la lista).
+    Guarda el estado actual del árbol Y COLA como una nueva versión.
+    Serializa la estructura jerárquica completa del árbol.
     
     Args:
         request: { "name": "Nombre de la versión" }
@@ -38,7 +39,7 @@ def save_version(request: VersionSaveRequest):
         Confirmación, timestamp, y lista de versiones disponibles
     """
     try:
-        result = version_service.save_version(flight_repository.tree, request.name)
+        result = version_controller.save_version(avl, request.name, flight_queue)
         return result
     
     except ValueError as e:
@@ -56,19 +57,8 @@ def list_versions():
         Lista de nombres de versiones con información
     """
     try:
-        versions = version_service.get_version_list()
-        
-        # Obtener información detallada de cada versión
-        versions_info = []
-        for version_name in versions:
-            info = version_service.get_version_info(version_name)
-            versions_info.append(info)
-        
-        return {
-            "status": "success",
-            "total_versions": len(versions_info),
-            "versions": versions_info
-        }
+        result = version_controller.list_versions()
+        return result
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error listando versiones: {str(e)}")
@@ -77,17 +67,17 @@ def list_versions():
 @router.post("/restore/{name}")
 def restore_version(name: str):
     """
-    Restaura el árbol desde una versión guardada.
+    Restaura el árbol Y COLA desde una versión guardada.
     Reconstruye exactamente la topología original con las mismas alturas.
     
     Args:
         name: Nombre de la versión a restaurar
         
     Returns:
-        Árbol serializado restaurado con métricas
+        Árbol serializado restaurado con métricas y estado de cola
     """
     try:
-        result = version_service.restore_version(flight_repository.tree, name)
+        result = version_controller.restore_version(avl, name, flight_queue)
         return result
     
     except ValueError as e:
@@ -108,7 +98,7 @@ def delete_version(name: str):
         Confirmación y lista de versiones restantes
     """
     try:
-        result = version_service.delete_version(name)
+        result = version_controller.delete_version(name)
         return result
     
     except ValueError as e:
@@ -129,7 +119,7 @@ def get_version_info(name: str):
         Información: timestamp, métricas, tipo de árbol
     """
     try:
-        info = version_service.get_version_info(name)
+        info = version_controller.version_service.get_version_info(name)
         return {
             "status": "success",
             "version": info
@@ -153,7 +143,7 @@ def overwrite_version(name: str):
         Confirmación y nuevo timestamp
     """
     try:
-        result = version_service.overwrite_version(flight_repository.tree, name)
+        result = version_controller.version_service.overwrite_version(avl, name)
         return result
     
     except ValueError as e:
@@ -175,7 +165,7 @@ def compare_versions(version1: str, version2: str):
         Comparación de métricas (altura, nodos, hojas, rotaciones)
     """
     try:
-        result = version_service.compare_versions(version1, version2)
+        result = version_controller.version_service.compare_versions(version1, version2)
         return {
             "status": "success",
             "comparison": result
@@ -197,7 +187,7 @@ def clear_all_versions():
         Confirmación de eliminación
     """
     try:
-        result = version_service.clear_all_versions()
+        result = version_controller.version_service.clear_all_versions()
         return result
     
     except Exception as e:
@@ -217,7 +207,7 @@ def export_version_as_json(name: str):
         JSON con toda la información de la versión
     """
     try:
-        json_data = version_service.export_version_as_json(name)
+        json_data = version_controller.version_service.export_version_as_json(name)
         return {
             "status": "success",
             "version_name": name,
@@ -228,9 +218,6 @@ def export_version_as_json(name: str):
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error exportando versión: {str(e)}")
-
-
-import json  # Importar aquí para el handler
 
 
 @router.post("/duplicate/{source_name}/{dest_name}")
@@ -246,27 +233,8 @@ def duplicate_version(source_name: str, dest_name: str):
         Confirmación de duplicación
     """
     try:
-        if source_name not in version_service.versions:
-            raise ValueError(f"La versión '{source_name}' no existe")
-        
-        if dest_name in version_service.versions:
-            raise ValueError(f"La versión '{dest_name}' ya existe")
-        
-        # Copiar versión
-        source_version = version_service.versions[source_name]
-        version_service.versions[dest_name] = {
-            "timestamp": f"{source_version['timestamp']} (copia)",
-            "tree_data": source_version["tree_data"],
-            "metrics": source_version["metrics"].copy(),
-            "tree_type": source_version.get("tree_type", "Unknown")
-        }
-        
-        return {
-            "status": "success",
-            "message": f"Versión '{source_name}' copiada como '{dest_name}'",
-            "versions_count": len(version_service.versions),
-            "available_versions": version_service.get_version_list()
-        }
+        result = version_controller.duplicate_version(source_name, dest_name)
+        return result
     
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

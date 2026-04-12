@@ -30,20 +30,21 @@ class VersionService:
         """
         self.versions: Dict[str, dict] = {}
 
-    def save_version(self, tree, version_name: str) -> dict:
+    def save_version(self, tree, version_name: str, queue=None) -> dict:
         """
-        Guarda el estado actual del árbol como una nueva versión.
+        Guarda el estado actual del árbol Y LA COLA como una nueva versión.
         Serializa la estructura jerárquica completa del árbol.
         
         Args:
             tree: Árbol AVL/BST a guardar
             version_name: Nombre de la versión
+            queue: Cola FIFO opcional para guardar
             
         Returns:
             Dict con confirmación, timestamp, y lista de versiones
             
         Raises:
-            ValueError: Si el nombre ya existe o está vacío
+            ValueError: Si el nombre ya existe o está vacío, o si el árbol está vacío
         """
         if not version_name or not version_name.strip():
             raise ValueError("El nombre de la versión no puede estar vacío")
@@ -51,26 +52,46 @@ class VersionService:
         if version_name in self.versions:
             raise ValueError(f"La versión '{version_name}' ya existe")
         
+        # Validar que el árbol no esté vacío
+        root = tree.getRoot()
+        if root is None:
+            raise ValueError("No se puede guardar una versión del árbol vacío. Primero carga o crea vuelos.")
+        
         # Serializar el árbol completo (estructura jerárquica)
-        tree_data = self._serialize_tree_complete(tree.getRoot())
+        tree_data = self._serialize_tree_complete(root)
         
         # Calcular métricas
         metrics = self._calculate_metrics(tree)
+        
+        # Guardar cola FIFO si existe
+        queue_data = None
+        queue_size = 0
+        if queue is not None:
+            queue_data = queue.get_all()  # Obtener todos los vuelos en la cola
+            queue_size = queue.size()
         
         # Guardar versión
         self.versions[version_name] = {
             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "tree_data": tree_data,
             "metrics": metrics,
+            "queue_data": queue_data,
+            "queue_size": queue_size,
             "tree_type": "AVL" if hasattr(tree, 'rotation_counts') else "BST"
         }
         
         return {
             "status": "success",
-            "message": f"Versión '{version_name}' guardada",
+            "message": f"Versión '{version_name}' guardada (incluyendo cola FIFO)",
             "timestamp": self.versions[version_name]["timestamp"],
             "versions_count": len(self.versions),
-            "available_versions": self.get_version_list()
+            "available_versions": self.get_version_list(),
+            "tree_stats": {
+                "total_nodes": metrics.get("total_nodes", 0),
+                "total_leaves": metrics.get("total_leaves", 0),
+                "height": metrics.get("height", 0),
+                "queue_size": queue_size
+            }
         }
 
     def _serialize_tree_complete(self, node):
@@ -157,20 +178,21 @@ class VersionService:
             "has_data": version["tree_data"] is not None
         }
 
-    def restore_version(self, tree, version_name: str) -> dict:
+    def restore_version(self, tree, version_name: str, queue=None) -> dict:
         """
-        Restaura un árbol desde una versión guardada.
+        Restaura un árbol Y LA COLA desde una versión guardada.
         Reconstruye exactamente la topología original con las mismas alturas.
         
         Args:
             tree: Árbol destino (se limpiará y llenará)
             version_name: Nombre de la versión a restaurar
+            queue: Cola FIFO opcional a restaurar
             
         Returns:
             Dict con confirmación y árbol restaurado serializado
             
         Raises:
-            ValueError: Si la versión no existe
+            ValueError: Si la versión no existe o está vacía
         """
         if version_name not in self.versions:
             raise ValueError(f"La versión '{version_name}' no existe")
@@ -178,8 +200,22 @@ class VersionService:
         version_data = self.versions[version_name]
         tree_data = version_data["tree_data"]
         
+        # Validar que tenemos datos para restaurar
+        if tree_data is None:
+            raise ValueError(f"La versión '{version_name}' está vacía y no se puede restaurar")
+        
         # Reconstruir el árbol desde el estado serializado
         new_root = self._deserialize_tree_complete(tree_data)
+        
+        # Validar que la deserialización tuvo éxito
+        if new_root is None and tree_data is not None:
+            raise ValueError(f"Error al deserializar la versión '{version_name}'")
+        
+        # Limpiar completamente el árbol actual
+        tree.root = None
+        tree.rotation_counts = {"LL": 0, "RR": 0, "LR": 0, "RL": 0}
+        if hasattr(tree, 'mass_cancellation_count'):
+            tree.mass_cancellation_count = 0
         
         # Asignar nueva raíz al árbol
         tree.root = new_root
@@ -190,14 +226,51 @@ class VersionService:
         
         # Restaurar conteos de rotaciones si aplica
         if hasattr(tree, 'rotation_counts'):
-            tree.rotation_counts = version_data["metrics"].get("rotation_counts", {}).copy()
+            saved_rotations = version_data["metrics"].get("rotation_counts", {
+                "LL": 0, "RR": 0, "LR": 0, "RL": 0
+            })
+            tree.rotation_counts = {
+                "LL": saved_rotations.get("LL", 0),
+                "RR": saved_rotations.get("RR", 0),
+                "LR": saved_rotations.get("LR", 0),
+                "RL": saved_rotations.get("RL", 0)
+            }
+        
+        # RESTAURAR COLA FIFO
+        restored_queue_size = 0
+        if queue is not None:
+            # Limpiar la cola actual
+            while not queue.is_empty():
+                queue.dequeue()
+            
+            # Restaurar los vuelos guardados en la versión
+            queue_data = version_data.get("queue_data", [])
+            if queue_data:
+                for flight in queue_data:
+                    queue.enqueue(flight)
+                restored_queue_size = len(queue_data)
+        
+        # Serializar el árbol restaurado para devolver
+        restored_tree_data = self._serialize_tree_complete(new_root)
+        
+        # Verificar que el árbol restaurado no está vacío
+        if restored_tree_data is None and new_root is not None:
+            return {
+                "status": "error",
+                "message": f"El árbol se restauró pero no se puede serializar correctamente",
+                "root": None
+            }
         
         return {
             "status": "success",
-            "message": f"Versión '{version_name}' restaurada",
+            "message": f"Versión '{version_name}' restaurada correctamente (árbol + cola FIFO)",
             "restored_from": version_data["timestamp"],
             "metrics": version_data["metrics"],
-            "tree": self._serialize_tree_complete(new_root)
+            "root": restored_tree_data,
+            "depth_limit": tree.depth_limit if hasattr(tree, 'depth_limit') else 3,
+            "rotations": tree.rotation_counts if hasattr(tree, 'rotation_counts') else {},
+            "queue_restored": restored_queue_size > 0,
+            "queue_size": restored_queue_size
         }
 
     def _deserialize_tree_complete(self, tree_data):
@@ -214,24 +287,36 @@ class VersionService:
         if tree_data is None:
             return None
         
-        # Crear nodo con valor, datos y altura
-        node = Node(tree_data["value"], datos=tree_data.get("datos"))
-        node.setHeight(tree_data.get("height", 1))
+        try:
+            # Crear nodo con valor, datos y altura
+            node = Node(tree_data["value"], datos=tree_data.get("datos"))
+            node.setHeight(tree_data.get("height", 1))
+            
+            # Validar que el nodo fue creado correctamente
+            if node is None:
+                return None
+            
+            # Reconstruir subárboles
+            left_data = tree_data.get("left")
+            right_data = tree_data.get("right")
+            
+            left_child = self._deserialize_tree_complete(left_data) if left_data else None
+            right_child = self._deserialize_tree_complete(right_data) if right_data else None
+            
+            # Conectar subárboles de forma explícita
+            if left_child is not None:
+                node.setLeftChild(left_child)
+                left_child.setParent(node)
+            
+            if right_child is not None:
+                node.setRightChild(right_child)
+                right_child.setParent(node)
+            
+            return node
         
-        # Reconstruir subárboles
-        left_child = self._deserialize_tree_complete(tree_data.get("left"))
-        right_child = self._deserialize_tree_complete(tree_data.get("right"))
-        
-        # Conectar subárboles
-        if left_child:
-            node.setLeftChild(left_child)
-            left_child.setParent(node)
-        
-        if right_child:
-            node.setRightChild(right_child)
-            right_child.setParent(node)
-        
-        return node
+        except Exception as e:
+            print(f"Error en deserialización: {str(e)}")
+            return None
 
     def delete_version(self, version_name: str) -> dict:
         """
