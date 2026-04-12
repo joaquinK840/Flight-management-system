@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getTree, insertValue, searchValue, resetTree, getMetrics, eliminateLeastProfitable, exportTree, loadFile } from '../services/avlService'
+import { getTree, insertValue, searchValue, resetTree, getMetrics, eliminateLeastProfitable, exportTree, loadFile, insertFlight, deleteFlight, cancelFlight } from '../services/avlService'
 
 const useAvlTree = () => {
   const [tree, setTree] = useState(null)
@@ -74,24 +74,54 @@ const useAvlTree = () => {
   const handleInsert = async () => {
     if (!value) return
     try {
-      await insertValue(parseInt(value))
+      const codigo = parseInt(value)
+      const flightData = {
+        codigo,
+        origen: 'N/A',
+        destino: 'N/A',
+        horaSalida: '00:00',
+        precioBase: 0,
+        pasajeros: 0,
+        prioridad: 0
+      }
+      const result = await insertFlight(flightData)
+      setTree(result.tree)
       setValue('')
-      await loadTree()
+      await refreshMetrics()
     } catch (err) {
-      console.error('Error insertando:', err)
+      console.error('Error insertando vuelo:', err)
+      alert(`❌ Error insertando vuelo: ${err.message}`)
     }
   }
 
   const handleDelete = async () => {
     if (!value) return
-    console.log('Eliminar:', value)
-    setValue('')
-    await loadTree()
+    try {
+      const codigo = parseInt(value)
+      const result = await deleteFlight(codigo)
+      setTree(result.tree)
+      setValue('')
+      await refreshMetrics()
+    } catch (err) {
+      console.error('Error eliminando vuelo:', err)
+      alert(`❌ Error eliminando vuelo: ${err.message}`)
+    }
   }
 
   const handleCancelFlight = async () => {
-    console.log('Cancelar vuelo')
-    await loadTree()
+    if (!value) return
+    try {
+      const codigo = parseInt(value)
+      const result = await cancelFlight(codigo)
+      setTree(result.tree)
+      const nodesCanceled = result.nodes_canceled || 1
+      alert(`✅ Vuelo ${codigo} cancelado!\n\nNodos cancelados: ${nodesCanceled}`)
+      setValue('')
+      await refreshMetrics()
+    } catch (err) {
+      console.error('Error cancelando vuelo:', err)
+      alert(`❌ Error cancelando vuelo: ${err.message}`)
+    }
   }
 
   const handleSearch = async () => {

@@ -127,3 +127,52 @@ export const loadFile = async (file) => {
     if (!response.ok) throw new Error(await response.text());
     return response.json();
 };
+
+export const insertFlight = async (flightData) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/flights/insert`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(flightData),
+        });
+        if (!response.ok) {
+            throw new Error('Error al insertar vuelo');
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error en insertFlight:', error);
+        throw error;
+    }
+};
+
+export const deleteFlight = async (codigo) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/flights/delete/${codigo}`, {
+            method: 'DELETE',
+        });
+        if (!response.ok) {
+            throw new Error('Error al eliminar vuelo');
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error en deleteFlight:', error);
+        throw error;
+    }
+};
+
+export const cancelFlight = async (codigo) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/flights/cancel/${codigo}`, {
+            method: 'DELETE',
+        });
+        if (!response.ok) {
+            throw new Error('Error al cancelar vuelo');
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error en cancelFlight:', error);
+        throw error;
+    }
+};
