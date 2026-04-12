@@ -1,6 +1,8 @@
-from fastapi import APIRouter
+from typing import Optional
 
+from fastapi import APIRouter, Body
 from controllers.tree_controller import tree_controller
+from models.flight import Flight
 
 router = APIRouter(prefix="/avl", tags=["AVL Tree"])
 
@@ -8,7 +10,10 @@ router = APIRouter(prefix="/avl", tags=["AVL Tree"])
 # INSERTAR NODO
 # -----------------------------
 @router.post("/insert/{value}")
-def insert_value(value: int):
+def insert_value(value: int, payload: Optional[dict] = Body(None)):
+    if payload:
+        flight = Flight.from_dict(payload)
+        value = flight.codigo
     return tree_controller.insert_value(value)
 
 

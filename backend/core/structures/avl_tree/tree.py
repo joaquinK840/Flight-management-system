@@ -16,6 +16,10 @@ class AVL:
         self.rotate_left_right = 0
         self.rotate_left = 0
         self.rotate_right_left = 0
+        self.stress_mode = False
+        self.depth_limit = 3
+        self.rotation_counts = {"LL": 0, "RR": 0, "LR": 0, "RL": 0}
+        self.mass_cancellation_count = 0
         
     
     def getRoot(self):

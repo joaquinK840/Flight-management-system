@@ -2,80 +2,59 @@ from core.structures.avl_tree.tree import AVL
 from core.structures.node.node import Node
 from services.serialize_tree import serialize_tree
 
-
-class AVLService:
+class TreeService:
     def __init__(self):
-        self._avl = AVL()
+        self.avl = AVL()
 
-    def _find_node(self, value: int):
-        root = self._avl.getRoot()
-        if root is None:
-            return None
-        return self._avl.search(value)
-
-    def insert_value(self, value: int) -> dict:
-        if self._find_node(value) is not None:
-            return {
-                "inserted": False,
-                "value": value,
-                "message": f"El valor {value} ya existe",
-                "tree": serialize_tree(self._avl),
-            }
-
-        self._avl.insert(Node(value))
-
+    def insert_node(self, value: int):
+        node = Node(value)
+        self.avl.insert(node)
         return {
-            "inserted": True,
-            "value": value,
             "message": "Nodo insertado",
-            "root": self._avl.getRoot().getValue() if self._avl.getRoot() else None,
-            "tree": serialize_tree(self._avl),
+            "root": self.avl.getRoot().getValue() if self.avl.getRoot() else None,
+            "tree": serialize_tree(self.avl)
         }
 
-    def get_tree(self) -> dict:
+    def get_tree(self):
         return {
-            "tree": serialize_tree(self._avl)
+            "tree": serialize_tree(self.avl)
         }
 
-    def search_value(self, value: int) -> dict:
-        node = self._find_node(value)
+    def search_value(self, value: int):
+        node = self.avl.search(value)
         if node is None:
             return {
                 "found": False,
-                "value": value,
+                "value": value
             }
-
         return {
             "found": True,
-            "value": node.getValue(),
+            "value": node.getValue()
         }
 
-    def cancel_value(self, value: int) -> dict:
-        if self._find_node(value) is None:
-            raise ValueError(f"No se encontró el valor {value} en el árbol")
-
-        self._avl.cancel(value)
+    def cancel_value(self, value: int):
+        self.avl.cancel(value)
         return {
             "canceled": True,
             "value": value,
             "message": "Valor cancelado",
-            "tree": serialize_tree(self._avl),
+            "tree": serialize_tree(self.avl)
         }
 
-    def delete_value(self, value: int) -> dict:
-        if self._find_node(value) is None:
-            raise ValueError(f"No se encontró el valor {value} en el árbol")
-
-        self._avl.delete(value)
+    def delete_value(self, value: int):
+        self.avl.delete(value)
         return {
             "deleted": True,
             "value": value,
             "message": "Valor eliminado",
-            "tree": serialize_tree(self._avl),
+            "tree": serialize_tree(self.avl)
         }
 
-    def reset_tree(self) -> dict:
-        self._avl = AVL()
+    def reset_tree(self):
+        self.avl = AVL()
         return {
             "message": "Árbol reiniciado"
         }
+
+# Singleton instance to persist tree state across requests if not using a DB
+tree_service = TreeService()
