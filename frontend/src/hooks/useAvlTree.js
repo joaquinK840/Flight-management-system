@@ -14,6 +14,7 @@ const useAvlTree = () => {
   const [showComparison, setShowComparison] = useState(false)
   const [metrics, setMetrics] = useState(null)
   const [stressMode, setStressMode] = useState(false)
+  const [depthLimit, setDepthLimit] = useState(3)
   const [auditReport, setAuditReport] = useState(null)
 
   useEffect(() => {
@@ -25,6 +26,9 @@ const useAvlTree = () => {
       const data = await getTree()
       // El backend retorna { root, depth_limit, rotations, metrics }
       setTree(data.root)
+      if (typeof data.depth_limit === 'number') {
+        setDepthLimit(data.depth_limit)
+      }
       await refreshMetrics()
     } catch (err) {
       console.error('Error cargando árbol:', err)
@@ -53,7 +57,7 @@ const useAvlTree = () => {
   const handleFileLoad = async (file, loadType) => {
     if (!file) return
     try {
-      const data = await loadFile(file)
+      const data = await loadFile(file, loadType)
       
       // Actualizar árboles
       setTree(data.avl.tree.root)
@@ -230,7 +234,10 @@ const useAvlTree = () => {
   const handleDepthLimitChange = async (limit) => {
     try {
       const result = await updateDepthLimit(limit)
-      setTree(result.tree.root)
+      setTree(result.tree)
+      if (typeof result.depth_limit === 'number') {
+        setDepthLimit(result.depth_limit)
+      }
       await refreshMetrics()
     } catch (err) {
       console.error('Error actualizando límite de profundidad:', err)
@@ -336,6 +343,7 @@ const useAvlTree = () => {
     handleExport,
     handleShowComparison,
     handleDepthLimitChange,
+    depthLimit,
     handleEliminateLeastProfitable,
     handleEnableStress,
     handleDisableStress,

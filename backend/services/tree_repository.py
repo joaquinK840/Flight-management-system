@@ -354,7 +354,7 @@ class TreeRepository:
 
     def _get_serialized_tree(self) -> dict:
         """Serializa el árbol actual para retornar en respuestas."""
-        return serialize_tree(self.tree)
+        return serialize_tree(self.tree, depth=0, depth_limit=self.tree.depth_limit)
 
     def get_tree_metrics(self) -> dict:
         """Retorna métricas del árbol actual."""

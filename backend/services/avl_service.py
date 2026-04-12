@@ -18,12 +18,12 @@ class TreeService:
         return {
             "message": "Nodo insertado",
             "root": self.avl.getRoot().getValue() if self.avl.getRoot() else None,
-            "tree": serialize_tree(self.avl)
+            "tree": serialize_tree(self.avl, depth=0, depth_limit=self.avl.depth_limit)
         }
 
     def get_tree(self):
         return {
-            "tree": serialize_tree(self.avl)
+            "tree": serialize_tree(self.avl, depth=0, depth_limit=self.avl.depth_limit)
         }
 
     def search_value(self, value: int):
@@ -44,7 +44,7 @@ class TreeService:
             "canceled": True,
             "value": value,
             "message": "Valor cancelado",
-            "tree": serialize_tree(self.avl)
+            "tree": serialize_tree(self.avl, depth=0, depth_limit=self.avl.depth_limit)
         }
 
     def delete_value(self, value: int):
@@ -53,7 +53,7 @@ class TreeService:
             "deleted": True,
             "value": value,
             "message": "Valor eliminado",
-            "tree": serialize_tree(self.avl)
+            "tree": serialize_tree(self.avl, depth=0, depth_limit=self.avl.depth_limit)
         }
 
     def reset_tree(self):

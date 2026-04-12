@@ -1,7 +1,4 @@
-from services.price_calculator import calculate_final_price
-
-
-def serialize_tree(tree, depth_limit=None):
+def serialize_tree(tree, depth=0, depth_limit=None):
     """
     Serializa el árbol AVL con cálculos de precios basados en profundidad.
     
@@ -11,6 +8,7 @@ def serialize_tree(tree, depth_limit=None):
     
     Args:
         tree: Instancia de árbol AVL
+        depth: Profundidad inicial (raiz = 0)
         depth_limit: Limite crítico de profundidad (opcional, usa tree.depth_limit si no se proporciona)
         
     Returns:
@@ -34,28 +32,44 @@ def serialize_tree(tree, depth_limit=None):
         """Serializa un nodo recursivamente con cálculo de precios."""
         if node is None:
             return None
-        
+
         # Obtener datos del nodo
         node_datos = node.getDatos() if node.getDatos() else {}
-        precio_base = node_datos.get('precioBase', 0)
-        codigo = node.getValue()
-        
-        # Calcular precio final y estado crítico
-        precio_final, es_critico = calculate_final_price(precio_base, current_depth, depth_limit_val)
-        
+        codigo = node_datos.get("codigo", node.getValue())
+        precio_base = node_datos.get("precioBase", 0)
+
+        left_child = node.getLeftChild()
+        right_child = node.getRightChild()
+        left_height = left_child.getHeight() if left_child else 0
+        right_height = right_child.getHeight() if right_child else 0
+        balance_factor = left_height - right_height
+
+        is_critical = depth_limit_val is not None and current_depth > depth_limit_val
+        precio_final = precio_base * 1.25 if is_critical else precio_base
+
         return {
-            "value": codigo,
+            "value": node.getValue(),
+            "height": node.getHeight(),
+            "balance_factor": balance_factor,
             "codigo": codigo,
-            "profundidad": current_depth,
-            "nodoCritico": es_critico,
+            "origen": node_datos.get("origen", ""),
+            "destino": node_datos.get("destino", ""),
+            "horaSalida": node_datos.get("horaSalida", ""),
+            "pasajeros": node_datos.get("pasajeros", 0),
+            "prioridad": node_datos.get("prioridad", 0),
+            "promocion": node_datos.get("promocion", False),
+            "alerta": node_datos.get("alerta", ""),
             "precioBase": precio_base,
-            "precioFinal": round(precio_final, 2),
+            "precioFinal": precio_final,
+            "nodoCritico": is_critical,
+            "profundidad": current_depth,
+            "penalizacion": 0.0,
             "datos": node_datos,
-            "left": _serialize_node(node.getLeftChild(), current_depth + 1),
-            "right": _serialize_node(node.getRightChild(), current_depth + 1)
+            "left": _serialize_node(left_child, current_depth + 1),
+            "right": _serialize_node(right_child, current_depth + 1)
         }
     
-    serialized_root = _serialize_node(root, 0)
+    serialized_root = _serialize_node(root, depth)
     
     return {
         "root": serialized_root,

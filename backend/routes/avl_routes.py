@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, HTTPException, File, Depends
+from fastapi import APIRouter, UploadFile, HTTPException, File, Depends, Form
 from fastapi.responses import FileResponse
 import json
 import io
@@ -43,10 +43,12 @@ def insert_value(value: int):
 
     avl.insert(node)
 
+    serialized = serialize_tree(avl, depth=0, depth_limit=avl.depth_limit)
+
     return {
         "message": "Nodo insertado",
         "root": avl.getRoot().getValue(),
-        "tree": serialize(avl.getRoot())
+        "tree": serialized["root"]
     }
 
 
@@ -60,14 +62,14 @@ def get_tree():
     - Usa tree.depth_limit para determinar qué nodos aplican penalización de 25%
     - Recalcula precios en cada llamada según depth_limit actual
     """
-    return serialize_tree(avl)
+    return serialize_tree(avl, depth=0, depth_limit=avl.depth_limit)
 
 
 # ========================================
 # PROFUNDIDAD CRÍTICA (DEPTH LIMIT)
 # ========================================
 
-@router.put("/depth-limit")
+@router.put("/config/depth-limit")
 def update_depth_limit(request: dict):
     """
     Actualiza el límite de profundidad crítica del árbol.
@@ -94,7 +96,7 @@ def update_depth_limit(request: dict):
         avl.depth_limit = new_limit
         
         # Serializar con el nuevo límite (recalcula todos los precios)
-        result = serialize_tree(avl, depth_limit=new_limit)
+        result = serialize_tree(avl, depth=0, depth_limit=new_limit)
         
         return {
             "status": "success",
@@ -156,7 +158,7 @@ def reset_tree():
 # CARGAR ÁRBOLES DESDE JSON
 # -----------------------------
 @router.post("/load-file")
-async def load_file(file: UploadFile = File(...)):
+async def load_file(file: UploadFile = File(...), load_type: str = Form(None)):
     """
     Carga árboles desde archivo JSON.
     
@@ -175,10 +177,13 @@ async def load_file(file: UploadFile = File(...)):
         json_content = content.decode("utf-8")
 
         # Cargar árboles desde JSON
-        avl, bst_global, load_type_global = load_trees_from_json(json_content)
+        avl, bst_global, load_type_global = load_trees_from_json(
+            json_content,
+            load_type_override=load_type
+        )
 
         # Serializar árboles
-        avl_serialized = serialize_tree(avl)
+        avl_serialized = serialize_tree(avl, depth=0, depth_limit=avl.depth_limit)
         
         # Serializar BST manualmente (no tiene rotation_counts)
         def serialize_node(node):
@@ -378,8 +383,7 @@ def audit_tree_integrity():
 # ========================================
 # EXPORTAR ÁRBOL A JSON
 # ========================================
-@router.get("/export")
-def export_tree_endpoint():
+def _build_export_response():
     """
     Exporta el árbol AVL completo a un archivo JSON.
     
@@ -440,6 +444,16 @@ def export_tree_endpoint():
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error exportando árbol: {str(e)}")
+
+
+@router.get("/export-json")
+def export_tree_json():
+    return _build_export_response()
+
+
+@router.get("/export")
+def export_tree_endpoint():
+    return _build_export_response()
 
 
 # ========================================

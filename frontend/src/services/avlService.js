@@ -86,7 +86,7 @@ export const eliminateLeastProfitable = async () => {
 
 export const exportTree = async () => {
     try {
-        const response = await fetch(`${API_BASE_URL}/avl/export`);
+        const response = await fetch(`${API_BASE_URL}/avl/export-json`);
         if (!response.ok) {
             throw new Error('Error al exportar el árbol');
         }
@@ -117,9 +117,12 @@ export const exportTree = async () => {
     }
 };
 
-export const loadFile = async (file) => {
+export const loadFile = async (file, loadType) => {
     const formData = new FormData();
     formData.append('file', file);
+    if (loadType) {
+        formData.append('load_type', loadType);
+    }
     const response = await fetch(`${API_BASE_URL}/avl/load-file`, {
         method: 'POST',
         body: formData  // NO poner Content-Type header, fetch lo setea solo
@@ -229,7 +232,7 @@ export const getTraversal = async (mode) => {
 
 export const updateDepthLimit = async (limit) => {
     try {
-        const response = await fetch(`${API_BASE_URL}/avl/depth-limit`, {
+        const response = await fetch(`${API_BASE_URL}/avl/config/depth-limit`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',

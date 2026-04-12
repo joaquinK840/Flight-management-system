@@ -1,11 +1,17 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { LOAD_MODE_INSERTION, LOAD_MODE_TOPOLOGY } from '../../models/treeModes'
 
-const UploadControls = ({ onFileLoad, onExport, onDepthLimitChange }) => {
+const UploadControls = ({ onFileLoad, onExport, onDepthLimitChange, depthLimit: depthLimitProp }) => {
   const topologyInputRef = useRef(null)
   const insertionInputRef = useRef(null)
   const [depthLimit, setDepthLimit] = useState(3)
   const [isApplying, setIsApplying] = useState(false)
+
+  useEffect(() => {
+    if (typeof depthLimitProp === 'number') {
+      setDepthLimit(depthLimitProp)
+    }
+  }, [depthLimitProp])
 
   const handleFileChange = async (event, loadType) => {
     const file = event.target.files?.[0]
@@ -16,6 +22,10 @@ const UploadControls = ({ onFileLoad, onExport, onDepthLimitChange }) => {
   }
 
   const handleApplyDepthLimit = async () => {
+    if (!Number.isFinite(depthLimit)) {
+      alert('⚠️ Ingresa un valor de profundidad válido')
+      return
+    }
     setIsApplying(true)
     try {
       await onDepthLimitChange(depthLimit)
@@ -47,8 +57,16 @@ const UploadControls = ({ onFileLoad, onExport, onDepthLimitChange }) => {
             type="number"
             min="0"
             max="20"
-            value={depthLimit}
-            onChange={(e) => setDepthLimit(parseInt(e.target.value, 10))}
+            value={Number.isFinite(depthLimit) ? depthLimit : ''}
+            onChange={(e) => {
+              const raw = e.target.value
+              if (raw === '') {
+                setDepthLimit(NaN)
+                return
+              }
+              const parsed = parseInt(raw, 10)
+              setDepthLimit(Number.isNaN(parsed) ? NaN : parsed)
+            }}
             style={{
               padding: '10px 12px',
               borderRadius: '6px',

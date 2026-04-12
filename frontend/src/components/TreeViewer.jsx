@@ -58,30 +58,63 @@ const TreeViewer = ({ tree, title = 'Estructura del Árbol AVL' }) => {
     if (!node) return null
 
     const isNodoCritico = node.nodoCritico === true
-    const backgroundColor = isNodoCritico ? '#ef5350' : '#66bb6a'
-    const origen = node.datos?.origen ? node.datos.origen.substring(0, 3) : ''
-    const destino = node.datos?.destino ? node.datos.destino.substring(0, 3) : ''
-    const balance = node.datos?.balance ?? node.balance
-    const displayValue = node.value || node.codigo || '?'
+    const isRoot = node.value === tree?.value
+    const backgroundColor = isNodoCritico
+      ? '#FF6B35'
+      : isRoot
+        ? '#0B3D91'
+        : '#4A90E2'
+    const borderStyle = isNodoCritico
+      ? '2px dashed #C62828'
+      : isRoot
+        ? '2px solid #062A6B'
+        : '2px solid #1E5AA8'
+    const origen = node.origen || node.datos?.origen || ''
+    const destino = node.destino || node.datos?.destino || ''
+    const balance = node.balance_factor ?? node.balance
+    const displayValue = node.codigo || node.value || '?'
+    const routeLabel = origen && destino ? `${origen} → ${destino}` : ''
+    const precioFinal = typeof node.precioFinal === 'number' ? node.precioFinal : null
+    const alertaActiva = Boolean(node.alerta && node.alerta !== 'normal')
+    const tooltip = [
+      `Codigo: ${displayValue}`,
+      `Origen: ${origen || '-'}`,
+      `Destino: ${destino || '-'}`,
+      `Hora: ${node.horaSalida || '-'}`,
+      `Precio Base: ${node.precioBase ?? 0}`,
+      `Precio Final: ${precioFinal ?? 0}`,
+      `Pasajeros: ${node.pasajeros ?? 0}`,
+      `Prioridad: ${node.prioridad ?? 0}`,
+      `Promocion: ${node.promocion ? 'si' : 'no'}`,
+      `Alerta: ${alertaActiva ? 'si' : 'no'}`,
+      `Profundidad: ${node.profundidad ?? 0}`,
+      `Factor Balance: ${balance ?? 0}`
+    ].join('\n')
 
     return (
       <div key={`${displayValue}-${JSON.stringify(node)}`} style={styles.nodeWrapper}>
         <div
+          title={tooltip}
           style={{
             ...styles.node,
             backgroundColor: backgroundColor,
-            borderColor: isNodoCritico ? '#c62828' : '#2e7d32',
+            border: borderStyle,
             boxShadow: isNodoCritico
-              ? '0 4px 8px rgba(239, 83, 80, 0.4)'
-              : '0 4px 8px rgba(102, 187, 106, 0.4)'
+              ? '0 4px 8px rgba(255, 107, 53, 0.4)'
+              : isRoot
+                ? '0 4px 8px rgba(11, 61, 145, 0.4)'
+                : '0 4px 8px rgba(74, 144, 226, 0.4)'
           }}
         >
           <div style={styles.nodeValue}>
             {isNodoCritico && <span style={styles.warningIcon}>⚠️</span>}
             <span style={styles.flightCode}>{displayValue}</span>
           </div>
-          {origen && destino && (
-            <div style={styles.route}>{origen} → {destino}</div>
+          {routeLabel && (
+            <div style={styles.route}>{routeLabel}</div>
+          )}
+          {isNodoCritico && precioFinal !== null && (
+            <div style={styles.criticalPrice}>⚠ ${precioFinal}</div>
           )}
           {balance !== undefined && balance !== null && (
             <div style={styles.balance}>bal: {balance}</div>
@@ -206,6 +239,11 @@ const styles = {
     marginTop: '4px',
     opacity: '0.9',
     fontStyle: 'italic'
+  },
+  criticalPrice: {
+    fontSize: '11px',
+    marginTop: '4px',
+    fontWeight: '700'
   },
   balance: {
     fontSize: '10px',

@@ -37,6 +37,7 @@ const HomePage = () => {
     handleExport,
     handleShowComparison,
     handleDepthLimitChange,
+    depthLimit,
     handleEliminateLeastProfitable,
     handleEnableStress,
     handleDisableStress,
@@ -54,6 +55,7 @@ const HomePage = () => {
         onFileLoad={handleFileLoad}
         onExport={handleExport}
         onDepthLimitChange={handleDepthLimitChange}
+        depthLimit={depthLimit}
       />
 
       <TreeOperations

@@ -22,6 +22,34 @@ def validate_flight_data(data: dict) -> bool:
     return True
 
 
+def _normalize_topology_node(node_data: dict) -> dict:
+    """Normaliza un nodo de topologia a llaves esperadas."""
+    if node_data is None:
+        return None
+
+    left_key = "left" if "left" in node_data else "izquierdo"
+    right_key = "right" if "right" in node_data else "derecho"
+
+    normalized = {
+        "codigo": node_data.get("codigo", node_data.get("value")),
+        "origen": node_data.get("origen", ""),
+        "destino": node_data.get("destino", ""),
+        "horaSalida": node_data.get("horaSalida", ""),
+        "precioBase": node_data.get("precioBase", 0),
+        "precioFinal": node_data.get("precioFinal", node_data.get("precioBase", 0)),
+        "pasajeros": node_data.get("pasajeros", 0),
+        "prioridad": node_data.get("prioridad", 0),
+        "promocion": node_data.get("promocion", False),
+        "alerta": node_data.get("alerta", False),
+        "height": node_data.get("height", node_data.get("altura", 1)),
+        "balance_factor": node_data.get("balance_factor", node_data.get("factorEquilibrio", 0)),
+        "left": _normalize_topology_node(node_data.get(left_key)),
+        "right": _normalize_topology_node(node_data.get(right_key))
+    }
+
+    return normalized
+
+
 def load_from_topology(json_data: dict) -> tuple:
     """
     Carga un árbol desde JSON en modo Topología.
@@ -33,7 +61,8 @@ def load_from_topology(json_data: dict) -> tuple:
     Returns:
         tuple: (avl, bst) - árboles reconstruidos
     """
-    if "root" not in json_data:
+    root_data = json_data.get("root", json_data)
+    if not isinstance(root_data, dict) or root_data.get("codigo") is None and root_data.get("value") is None:
         raise ValueError("Modo topology requiere un campo 'root'")
 
     avl = AVL()
@@ -73,7 +102,8 @@ def load_from_topology(json_data: dict) -> tuple:
         return node
 
     # Reconstruir árbol desde JSON
-    root = reconstruct_node_recursive(json_data["root"])
+    normalized_root = _normalize_topology_node(root_data)
+    root = reconstruct_node_recursive(normalized_root)
 
     # Establecer raíz en árboles
     avl.root = root
@@ -92,6 +122,21 @@ def load_from_topology(json_data: dict) -> tuple:
     return avl, bst
 
 
+def _normalize_insertion_flights(json_data: dict) -> list:
+    flights = json_data.get("flights")
+    if flights is None:
+        flights = json_data.get("vuelos")
+    return flights
+
+
+def _parse_codigo(codigo_value):
+    if isinstance(codigo_value, str):
+        stripped = codigo_value.upper().replace("SB", "")
+        if stripped.isdigit():
+            return int(stripped)
+    return codigo_value
+
+
 def load_from_insertion(json_data: dict) -> tuple:
     """
     Carga un árbol desde JSON en modo Inserción.
@@ -103,10 +148,9 @@ def load_from_insertion(json_data: dict) -> tuple:
     Returns:
         tuple: (avl, bst) - árboles con vuelos insertados
     """
-    if "flights" not in json_data:
+    flights = _normalize_insertion_flights(json_data)
+    if flights is None:
         raise ValueError("Modo insertion requiere un campo 'flights'")
-
-    flights = json_data["flights"]
     if not isinstance(flights, list):
         raise ValueError("El campo 'flights' debe ser una lista")
 
@@ -121,7 +165,8 @@ def load_from_insertion(json_data: dict) -> tuple:
         if not validate_flight_data(flight_data):
             continue  # Saltar vuelos inválidos
 
-        value = flight_data.get("codigo")
+        value = _parse_codigo(flight_data.get("codigo"))
+        flight_data["codigo"] = value
 
         # Crear nodo con datos completos
         node_avl = Node(value, datos=flight_data.copy())
@@ -134,7 +179,7 @@ def load_from_insertion(json_data: dict) -> tuple:
     return avl, bst
 
 
-def load_trees_from_json(json_content: str) -> tuple:
+def load_trees_from_json(json_content: str, load_type_override: str = None) -> tuple:
     """
     Carga árboles desde una cadena JSON.
     
@@ -157,12 +202,18 @@ def load_trees_from_json(json_content: str) -> tuple:
         raise ValueError("El JSON debe ser un objeto (diccionario)")
 
     load_type = json_data.get("type")
+    if not load_type:
+        tipo = json_data.get("tipo")
+        if isinstance(tipo, str):
+            load_type = tipo.strip().lower()
+    if not load_type and load_type_override:
+        load_type = load_type_override.strip().lower()
 
     if load_type == "topology":
         avl, bst = load_from_topology(json_data)
         return avl, bst, "topology"
 
-    elif load_type == "insertion":
+    elif load_type == "insertion" or load_type == "insercion":
         avl, bst = load_from_insertion(json_data)
         return avl, bst, "insertion"
 
@@ -205,7 +256,7 @@ def export_tree_to_json(tree) -> dict:
         
         # Obtener datos del nodo
         node_datos = node.getDatos() if node.getDatos() else {}
-        codigo = node.getValue()
+        codigo = node_datos.get("codigo", node.getValue())
         altura = node.getHeight() if hasattr(node, 'getHeight') else node.height
         
         # Calcular balance factor
@@ -217,12 +268,28 @@ def export_tree_to_json(tree) -> dict:
         balance_factor = left_height - right_height
         
         # Serializar nodo con todos sus atributos
+        depth_limit = getattr(tree, 'depth_limit', 3)
+        is_critical = current_depth > depth_limit
+        precio_base = node_datos.get("precioBase", 0)
+        precio_final = precio_base * 1.25 if is_critical else precio_base
+
         serialized_node = {
             "codigo": codigo,
             "height": altura,
             "balance_factor": balance_factor,
             "profundidad": current_depth,
             "datos": node_datos,
+            "origen": node_datos.get("origen", ""),
+            "destino": node_datos.get("destino", ""),
+            "horaSalida": node_datos.get("horaSalida", ""),
+            "pasajeros": node_datos.get("pasajeros", 0),
+            "prioridad": node_datos.get("prioridad", 0),
+            "promocion": node_datos.get("promocion", False),
+            "alerta": node_datos.get("alerta", ""),
+            "precioBase": precio_base,
+            "precioFinal": precio_final,
+            "nodoCritico": is_critical,
+            "penalizacion": 0.0,
             "left": serialize_node_recursive(left_child, current_depth + 1),
             "right": serialize_node_recursive(right_child, current_depth + 1)
         }
