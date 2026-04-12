@@ -176,3 +176,37 @@ export const cancelFlight = async (codigo) => {
         throw error;
     }
 };
+
+export const undoOperation = async () => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/flights/undo`, {
+            method: 'POST',
+        });
+        if (!response.ok) {
+            const error = new Error('Error al deshacer');
+            error.status = response.status;
+            throw error;
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error en undoOperation:', error);
+        throw error;
+    }
+};
+
+export const redoOperation = async () => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/flights/redo`, {
+            method: 'POST',
+        });
+        if (!response.ok) {
+            const error = new Error('Error al rehacer');
+            error.status = response.status;
+            throw error;
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error en redoOperation:', error);
+        throw error;
+    }
+};

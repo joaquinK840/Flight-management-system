@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getTree, insertValue, searchValue, resetTree, getMetrics, eliminateLeastProfitable, exportTree, loadFile, insertFlight, deleteFlight, cancelFlight } from '../services/avlService'
+import { getTree, insertValue, searchValue, resetTree, getMetrics, eliminateLeastProfitable, exportTree, loadFile, insertFlight, deleteFlight, cancelFlight, undoOperation, redoOperation } from '../services/avlService'
 
 const useAvlTree = () => {
   const [tree, setTree] = useState(null)
@@ -134,12 +134,34 @@ const useAvlTree = () => {
     }
   }
 
-  const handleUndo = () => {
-    console.log('Deshacer')
+  const handleUndo = async () => {
+    try {
+      const result = await undoOperation()
+      setTree(result.tree)
+      await refreshMetrics()
+    } catch (err) {
+      if (err.status === 400) {
+        alert('No hay operaciones para deshacer')
+      } else {
+        console.error('Error deshaciendo:', err)
+        alert(`❌ Error deshaciendo: ${err.message}`)
+      }
+    }
   }
 
-  const handleRedo = () => {
-    console.log('Rehacer')
+  const handleRedo = async () => {
+    try {
+      const result = await redoOperation()
+      setTree(result.tree)
+      await refreshMetrics()
+    } catch (err) {
+      if (err.status === 400) {
+        alert('No hay operaciones para rehacer')
+      } else {
+        console.error('Error rehaciendo:', err)
+        alert(`❌ Error rehaciendo: ${err.message}`)
+      }
+    }
   }
 
   const handleReset = async () => {
