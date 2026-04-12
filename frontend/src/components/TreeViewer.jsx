@@ -7,6 +7,10 @@ const TreeViewer = ({ tree }) => {
     }
 
     const paddingLeft = depth * 30
+    const isNodoCritico = node.nodoCritico === true
+    const backgroundColor = isNodoCritico ? '#f44336' : '#4CAF50'
+    const precioFinal = node.datos?.precioFinal
+    const displayText = precioFinal ? `${node.value} ($${precioFinal})` : node.value
 
     return (
       <div key={`${node.value}-${depth}`} style={{ marginLeft: `${paddingLeft}px` }}>
@@ -14,14 +18,14 @@ const TreeViewer = ({ tree }) => {
           style={{
             padding: '8px 12px',
             margin: '5px 0',
-            backgroundColor: '#4CAF50',
+            backgroundColor: backgroundColor,
             color: 'white',
             borderRadius: '4px',
             display: 'inline-block',
             fontWeight: 'bold'
           }}
         >
-          {node.value}
+          {displayText}
         </div>
         {(node.left || node.right) && (
           <div style={{ marginLeft: '20px', borderLeft: '2px solid #999', paddingLeft: '10px' }}>

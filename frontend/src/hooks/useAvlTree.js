@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getTree, insertValue, searchValue, resetTree, getMetrics, eliminateLeastProfitable, exportTree, loadFile, insertFlight, deleteFlight, cancelFlight, undoOperation, redoOperation, getTraversal } from '../services/avlService'
+import { getTree, insertValue, searchValue, resetTree, getMetrics, eliminateLeastProfitable, exportTree, loadFile, insertFlight, deleteFlight, cancelFlight, undoOperation, redoOperation, getTraversal, updateDepthLimit } from '../services/avlService'
 
 const useAvlTree = () => {
   const [tree, setTree] = useState(null)
@@ -206,8 +206,15 @@ const useAvlTree = () => {
     }
   }
 
-  const handleDepthLimitChange = (limit) => {
-    console.log('Límite de profundidad:', limit)
+  const handleDepthLimitChange = async (limit) => {
+    try {
+      const result = await updateDepthLimit(limit)
+      setTree(result.tree)
+      await refreshMetrics()
+    } catch (err) {
+      console.error('Error actualizando límite de profundidad:', err)
+      alert(`❌ Error actualizando límite de profundidad: ${err.message}`)
+    }
   }
 
   const handleEliminateLeastProfitable = async () => {
