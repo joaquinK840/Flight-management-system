@@ -42,6 +42,7 @@ const HomePage = () => {
     handleDisableStress,
     handleRebalance,
     handleAudit,
+    loadTree,
     refreshMetrics
   } = useAvlTree()
 

@@ -55,28 +55,30 @@ def serialize_tree(tree, depth_limit=None):
             "right": _serialize_node(node.getRightChild(), current_depth + 1)
         }
     
+    serialized_root = _serialize_node(root, 0)
+    
     return {
-        "root": _serialize_node(root, 0),
+        "root": serialized_root,
         "depth_limit": depth_limit_val,
         "rotations": tree.rotation_counts if hasattr(tree, 'rotation_counts') else {},
         "metrics": {
-            "total_nodes": _count_nodes(root),
-            "height": _get_height(root)
+            "total_nodes": _count_nodes_dict(serialized_root),
+            "height": _get_height_dict(serialized_root)
         }
     }
 
 
-def _count_nodes(node):
-    """Cuenta nodos recursivamente."""
+def _count_nodes_dict(node):
+    """Cuenta nodos recursivamente en árbol serializado (diccionario)."""
     if node is None:
         return 0
-    return 1 + _count_nodes(node.get("left")) + _count_nodes(node.get("right"))
+    return 1 + _count_nodes_dict(node.get("left")) + _count_nodes_dict(node.get("right"))
 
 
-def _get_height(node):
-    """Calcula altura del árbol serializado."""
+def _get_height_dict(node):
+    """Calcula altura del árbol serializado (diccionario)."""
     if node is None:
         return 0
-    left_height = _get_height(node.get("left"))
-    right_height = _get_height(node.get("right"))
+    left_height = _get_height_dict(node.get("left"))
+    right_height = _get_height_dict(node.get("right"))
     return 1 + max(left_height, right_height)

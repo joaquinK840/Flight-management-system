@@ -138,7 +138,8 @@ export const insertFlight = async (flightData) => {
             body: JSON.stringify(flightData),
         });
         if (!response.ok) {
-            throw new Error('Error al insertar vuelo');
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.detail || `Error HTTP ${response.status}`)
         }
         return await response.json();
     } catch (error) {

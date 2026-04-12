@@ -23,7 +23,8 @@ const useAvlTree = () => {
   const loadTree = async () => {
     try {
       const data = await getTree()
-      setTree(data.tree)
+      // El backend retorna { root, depth_limit, rotations, metrics }
+      setTree(data.root)
       await refreshMetrics()
     } catch (err) {
       console.error('Error cargando árbol:', err)
@@ -55,8 +56,8 @@ const useAvlTree = () => {
       const data = await loadFile(file)
       
       // Actualizar árboles
-      setTree(data.avl.tree)
-      setBstTree(data.bst.tree)
+      setTree(data.avl.tree.root)
+      setBstTree(data.bst.tree.root)
       
       // Guardar datos de comparación con métricas reales del servidor
       if (data.avl.metrics && data.bst.metrics) {
@@ -94,12 +95,15 @@ const useAvlTree = () => {
         origen: 'N/A',
         destino: 'N/A',
         horaSalida: '00:00',
-        precioBase: 0,
+        precioBase: 0.0,
         pasajeros: 0,
-        prioridad: 0
+        prioridad: 0,
+        promocion: false,
+        alerta: 'normal',
+        precioFinal: 0.0
       }
       const result = await insertFlight(flightData)
-      setTree(result.tree)
+      setTree(result.tree.root)
       setValue('')
       await refreshMetrics()
     } catch (err) {
@@ -113,7 +117,7 @@ const useAvlTree = () => {
     try {
       const codigo = parseInt(value)
       const result = await deleteFlight(codigo)
-      setTree(result.tree)
+      setTree(result.tree.root)
       setValue('')
       await refreshMetrics()
     } catch (err) {
@@ -127,7 +131,7 @@ const useAvlTree = () => {
     try {
       const codigo = parseInt(value)
       const result = await cancelFlight(codigo)
-      setTree(result.tree)
+      setTree(result.tree.root)
       const nodesCanceled = result.nodes_canceled || 1
       alert(`✅ Vuelo ${codigo} cancelado!\n\nNodos cancelados: ${nodesCanceled}`)
       setValue('')
@@ -151,7 +155,7 @@ const useAvlTree = () => {
   const handleUndo = async () => {
     try {
       const result = await undoOperation()
-      setTree(result.tree)
+      setTree(result.tree.root)
       await refreshMetrics()
     } catch (err) {
       if (err.status === 400) {
@@ -166,7 +170,7 @@ const useAvlTree = () => {
   const handleRedo = async () => {
     try {
       const result = await redoOperation()
-      setTree(result.tree)
+      setTree(result.tree.root)
       await refreshMetrics()
     } catch (err) {
       if (err.status === 400) {
@@ -226,7 +230,7 @@ const useAvlTree = () => {
   const handleDepthLimitChange = async (limit) => {
     try {
       const result = await updateDepthLimit(limit)
-      setTree(result.tree)
+      setTree(result.tree.root)
       await refreshMetrics()
     } catch (err) {
       console.error('Error actualizando límite de profundidad:', err)
@@ -281,7 +285,7 @@ const useAvlTree = () => {
     }
     try {
       const result = await rebalanceTree()
-      setTree(result.tree)
+      setTree(result.tree.root)
       const rotations = result.rotations_applied || 0
       alert(`✅ Árbol rebalanceado\n\nRotaciones aplicadas: ${rotations}`)
       await refreshMetrics()

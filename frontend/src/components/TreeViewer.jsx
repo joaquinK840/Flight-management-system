@@ -219,3 +219,5 @@ const styles = {
     marginTop: '8px'
   }
 }
+
+export default TreeViewer
