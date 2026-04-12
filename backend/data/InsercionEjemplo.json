@@ -1,0 +1,113 @@
+{
+  "type": "insertion",
+  "flights": [
+    {
+      "codigo": 100,
+      "origen": "Madrid",
+      "destino": "Barcelona",
+      "horaSalida": "10:30",
+      "precioBase": 150.00,
+      "precioFinal": 150.00,
+      "pasajeros": 180,
+      "promocion": false,
+      "alerta": "normal",
+      "prioridad": 1
+    },
+    {
+      "codigo": 50,
+      "origen": "Madrid",
+      "destino": "Valencia",
+      "horaSalida": "08:00",
+      "precioBase": 100.00,
+      "precioFinal": 100.00,
+      "pasajeros": 150,
+      "promocion": true,
+      "alerta": "normal",
+      "prioridad": 2
+    },
+    {
+      "codigo": 150,
+      "origen": "Madrid",
+      "destino": "Malaga",
+      "horaSalida": "12:00",
+      "precioBase": 120.00,
+      "precioFinal": 120.00,
+      "pasajeros": 200,
+      "promocion": true,
+      "alerta": "normal",
+      "prioridad": 1
+    },
+    {
+      "codigo": 25,
+      "origen": "Madrid",
+      "destino": "Sevilla",
+      "horaSalida": "06:00",
+      "precioBase": 80.00,
+      "precioFinal": 80.00,
+      "pasajeros": 100,
+      "promocion": false,
+      "alerta": "normal",
+      "prioridad": 3
+    },
+    {
+      "codigo": 75,
+      "origen": "Madrid",
+      "destino": "Bilbao",
+      "horaSalida": "09:00",
+      "precioBase": 110.00,
+      "precioFinal": 110.00,
+      "pasajeros": 160,
+      "promocion": false,
+      "alerta": "normal",
+      "prioridad": 2
+    },
+    {
+      "codigo": 125,
+      "origen": "Madrid",
+      "destino": "Granada",
+      "horaSalida": "11:00",
+      "precioBase": 105.00,
+      "precioFinal": 105.00,
+      "pasajeros": 170,
+      "promocion": false,
+      "alerta": "normal",
+      "prioridad": 2
+    },
+    {
+      "codigo": 175,
+      "origen": "Madrid",
+      "destino": "Alicante",
+      "horaSalida": "13:00",
+      "precioBase": 130.00,
+      "precioFinal": 130.00,
+      "pasajeros": 190,
+      "promocion": false,
+      "alerta": "normal",
+      "prioridad": 1
+    },
+    {
+      "codigo": 110,
+      "origen": "Barcelona",
+      "destino": "Valencia",
+      "horaSalida": "14:00",
+      "precioBase": 90.00,
+      "precioFinal": 90.00,
+      "pasajeros": 140,
+      "promocion": true,
+      "alerta": "normal",
+      "prioridad": 2
+    },
+    {
+      "codigo": 200,
+      "origen": "Valencia",
+      "destino": "Alicante",
+      "horaSalida": "15:30",
+      "precioBase": 60.00,
+      "precioFinal": 60.00,
+      "pasajeros": 120,
+      "promocion": false,
+      "alerta": "normal",
+      "prioridad": 3
+    }
+  ]
+}

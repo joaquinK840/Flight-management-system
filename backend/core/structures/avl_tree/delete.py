@@ -54,7 +54,9 @@ def __deleteNodeWithTwoChildren(tree, node):
     successor = node.getRightChild()
     while successor.getLeftChild() is not None:
         successor = successor.getLeftChild()
+    # Copiar valor y datos del sucesor al nodo a eliminar
     node.value = successor.getValue()
+    node.setDatos(successor.getDatos())
     # Eliminar el sucesor (que tendrá a lo sumo un hijo derecho)
     if successor.getRightChild() is not None:
         __deleteNodeWithOneChild(tree, successor)
