@@ -53,12 +53,59 @@ def insert_value(value: int):
 # -----------------------------
 @router.get("/tree")
 def get_tree():
+    """
+    Obtiene el árbol serializado con precios calculados según profundidad crítica.
+    - Usa tree.depth_limit para determinar qué nodos aplican penalización de 25%
+    - Recalcula precios en cada llamada según depth_limit actual
+    """
+    return serialize_tree(avl)
 
-    root = avl.getRoot()
 
-    return {
-        "tree": serialize(root)
-    }
+# ========================================
+# PROFUNDIDAD CRÍTICA (DEPTH LIMIT)
+# ========================================
+
+@router.put("/depth-limit")
+def update_depth_limit(request: dict):
+    """
+    Actualiza el límite de profundidad crítica del árbol.
+    - Todos los precios se recalculan automáticamente
+    - Nodos en profundidad > limit tienen penalización del 25%
+    - Nodos en profundidad <= limit carecen de penalización
+    
+    Body:
+        { "limit": 4 }
+        
+    Returns:
+        Árbol completo serializado con precios recalculados según nuevo limite
+    """
+    try:
+        new_limit = request.get("limit")
+        
+        if new_limit is None:
+            raise HTTPException(status_code=400, detail="'limit' es requerido")
+        
+        if not isinstance(new_limit, int) or new_limit < 0:
+            raise HTTPException(status_code=400, detail="'limit' debe ser un entero no negativo")
+        
+        # Actualizar el límite de profundidad
+        avl.depth_limit = new_limit
+        
+        # Serializar con el nuevo límite (recalcula todos los precios)
+        result = serialize_tree(avl, depth_limit=new_limit)
+        
+        return {
+            "status": "success",
+            "message": f"Límite de profundidad actualizado a {new_limit}",
+            "depth_limit": avl.depth_limit,
+            "tree": result["root"],
+            "metrics": result["metrics"]
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
 
 # -----------------------------
@@ -195,7 +242,7 @@ def get_tree_metrics():
 
 
 # ========================================
-# MODO ESTRÉS (STRESS MODE)
+# MODO ESTRÉS (STRESS MODE)  
 # ========================================
 
 def verify_stress_mode_enabled():
