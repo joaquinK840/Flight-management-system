@@ -1,37 +1,20 @@
-import { useEffect, useState } from 'react'
-import { LOAD_MODE_INSERTION, LOAD_MODE_TOPOLOGY } from '../models/treeModes'
-import {
-    cancelFlight,
-    deleteValue,
-    exportToJSON,
-    getBalanceFactor,
-    getBreadthFirst,
-    getInOrder,
-    getPostOrder,
-    getPreOrder,
-    getTree,
-    getTreeComparison,
-    getTreeHeight,
-    insertValue,
-    loadFromJSON,
-    redoOperation,
-    resetTree,
-    searchValue,
-    undoOperation
-} from '../services/avlService'
-import { parseInsertionFlights } from '../utils/treeHelpers'
+import { useState, useEffect } from 'react'
+import { getTree, insertValue, searchValue, resetTree, getMetrics, eliminateLeastProfitable, exportTree, loadFile, insertFlight, deleteFlight, cancelFlight, undoOperation, redoOperation, getTraversal, updateDepthLimit, enableStressMode, disableStressMode, rebalanceTree, auditTree } from '../services/avlService'
 
 const useAvlTree = () => {
   const [tree, setTree] = useState(null)
   const [bstTree, setBstTree] = useState(null)
   const [value, setValue] = useState('')
   const [searchResult, setSearchResult] = useState(null)
-  const [treeHeight, setTreeHeight] = useState(null)
-  const [balanceFactor, setBalanceFactor] = useState(null)
+  const [treeHeight, setTreeHeight] = useState(0)
+  const [balanceFactor, setBalanceFactor] = useState(0)
   const [traversalMode, setTraversalMode] = useState(null)
   const [traversalResult, setTraversalResult] = useState(null)
   const [comparisonData, setComparisonData] = useState(null)
   const [showComparison, setShowComparison] = useState(false)
+  const [metrics, setMetrics] = useState(null)
+  const [stressMode, setStressMode] = useState(false)
+  const [auditReport, setAuditReport] = useState(null)
 
   useEffect(() => {
     loadTree()
@@ -40,78 +23,162 @@ const useAvlTree = () => {
   const loadTree = async () => {
     try {
       const data = await getTree()
-      setTree(data.tree)
-      const heightData = await getTreeHeight()
-      setTreeHeight(heightData.height)
-      const bfData = await getBalanceFactor()
-      setBalanceFactor(bfData.balance_factor)
-    } catch (error) {
-      console.error('Error cargando el árbol:', error)
+      // El backend retorna { root, depth_limit, rotations, metrics }
+      setTree(data.root)
+      await refreshMetrics()
+    } catch (err) {
+      console.error('Error cargando árbol:', err)
+    }
+  }
+
+  const refreshMetrics = async () => {
+    try {
+      const metricsData = await getMetrics()
+      setMetrics(metricsData)
+    } catch (err) {
+      console.error('Error cargando métricas:', err)
+    }
+  }
+
+  const calculateHeight = (node) => {
+    if (!node) return 0
+    return 1 + Math.max(calculateHeight(node.left), calculateHeight(node.right))
+  }
+
+  const countNodes = (node) => {
+    if (!node) return 0
+    return 1 + countNodes(node.left) + countNodes(node.right)
+  }
+
+  const handleFileLoad = async (file, loadType) => {
+    if (!file) return
+    try {
+      const data = await loadFile(file)
+      
+      // Actualizar árboles
+      setTree(data.avl.tree.root)
+      setBstTree(data.bst.tree.root)
+      
+      // Guardar datos de comparación con métricas reales del servidor
+      if (data.avl.metrics && data.bst.metrics) {
+        setComparisonData({
+          avl: {
+            height: data.avl.metrics.height,
+            nodes: data.avl.metrics.total_nodes,
+            leaves: data.avl.metrics.leaves,
+            rotations: data.avl.metrics.total_rotations,
+            rotationDetail: data.avl.metrics.rotations
+          },
+          bst: {
+            height: data.bst.metrics.height,
+            nodes: data.bst.metrics.total_nodes,
+            leaves: data.bst.metrics.leaves
+          },
+          comparison: data.comparison
+        })
+        setShowComparison(true)
+      }
+      
+      await refreshMetrics()
+    } catch (err) {
+      console.error('Error cargando archivo:', err)
+      alert(`❌ Error cargando archivo: ${err.message}`)
     }
   }
 
   const handleInsert = async () => {
     if (!value) return
-
     try {
-      await insertValue(parseInt(value, 10))
+      const codigo = parseInt(value)
+      const flightData = {
+        codigo,
+        origen: 'N/A',
+        destino: 'N/A',
+        horaSalida: '00:00',
+        precioBase: 0.0,
+        pasajeros: 0,
+        prioridad: 0,
+        promocion: false,
+        alerta: 'normal',
+        precioFinal: 0.0
+      }
+      const result = await insertFlight(flightData)
+      setTree(result.tree.root)
       setValue('')
-      await loadTree()
-    } catch (error) {
-      console.error('Error insertando:', error)
+      await refreshMetrics()
+    } catch (err) {
+      console.error('Error insertando vuelo:', err)
+      alert(`❌ Error insertando vuelo: ${err.message}`)
     }
   }
 
   const handleDelete = async () => {
     if (!value) return
-
     try {
-      await deleteValue(parseInt(value, 10))
+      const codigo = parseInt(value)
+      const result = await deleteFlight(codigo)
+      setTree(result.tree.root)
       setValue('')
-      await loadTree()
-    } catch (error) {
-      console.error('Error eliminando:', error)
+      await refreshMetrics()
+    } catch (err) {
+      console.error('Error eliminando vuelo:', err)
+      alert(`❌ Error eliminando vuelo: ${err.message}`)
     }
   }
 
   const handleCancelFlight = async () => {
     if (!value) return
-
     try {
-      await cancelFlight(parseInt(value, 10))
+      const codigo = parseInt(value)
+      const result = await cancelFlight(codigo)
+      setTree(result.tree.root)
+      const nodesCanceled = result.nodes_canceled || 1
+      alert(`✅ Vuelo ${codigo} cancelado!\n\nNodos cancelados: ${nodesCanceled}`)
       setValue('')
-      await loadTree()
-    } catch (error) {
-      console.error('Error cancelando vuelo:', error)
+      await refreshMetrics()
+    } catch (err) {
+      console.error('Error cancelando vuelo:', err)
+      alert(`❌ Error cancelando vuelo: ${err.message}`)
     }
   }
 
   const handleSearch = async () => {
     if (!value) return
-
     try {
-      const result = await searchValue(parseInt(value, 10))
+      const result = await searchValue(parseInt(value))
       setSearchResult(result)
-    } catch (error) {
-      console.error('Error buscando:', error)
+    } catch (err) {
+      console.error('Error buscando:', err)
     }
   }
 
   const handleUndo = async () => {
     try {
-      await undoOperation()
-      await loadTree()
-    } catch (error) {
-      console.error('Error en undo:', error)
+      const result = await undoOperation()
+      setTree(result.tree.root)
+      await refreshMetrics()
+    } catch (err) {
+      if (err.status === 400) {
+        alert('No hay operaciones para deshacer')
+      } else {
+        console.error('Error deshaciendo:', err)
+        alert(`❌ Error deshaciendo: ${err.message}`)
+      }
     }
   }
 
   const handleRedo = async () => {
     try {
-      await redoOperation()
-      await loadTree()
-    } catch (error) {
-      console.error('Error en redo:', error)
+      const result = await redoOperation()
+      setTree(result.tree.root)
+      await refreshMetrics()
+    } catch (err) {
+      if (err.status === 400) {
+        alert('No hay operaciones para rehacer')
+      } else {
+        console.error('Error rehaciendo:', err)
+        alert(`❌ Error rehaciendo: ${err.message}`)
+      }
     }
   }
 
@@ -119,133 +186,127 @@ const useAvlTree = () => {
     try {
       await resetTree()
       setTree(null)
-      setBstTree(null)
       setSearchResult(null)
-      setTreeHeight(null)
-      setBalanceFactor(null)
-      setTraversalResult(null)
-      setComparisonData(null)
-      setShowComparison(false)
-    } catch (error) {
-      console.error('Error reiniciando:', error)
+      await loadTree()
+    } catch (err) {
+      console.error('Error reiniciando:', err)
     }
   }
 
   const handleTraversal = async (mode) => {
     try {
-      let result = null
-
-      switch (mode) {
-        case 'pre':
-          result = await getPreOrder()
-          break
-        case 'in':
-          result = await getInOrder()
-          break
-        case 'post':
-          result = await getPostOrder()
-          break
-        case 'bfs':
-          result = await getBreadthFirst()
-          break
-        default:
-          return
-      }
-
-      setTraversalMode(mode)
-      setTraversalResult(result.traversal)
-    } catch (error) {
-      console.error('Error en recorrido:', error)
-    }
-  }
-
-  const handleFileLoad = async (file, loadType) => {
-    if (!file) return
-
-    try {
-      if (loadType === LOAD_MODE_TOPOLOGY) {
-        const result = await loadFromJSON(file, loadType)
-        setTree(result.trees.avl)
-        setBstTree(result.trees.bst)
-        setComparisonData(result.comparison)
-        setShowComparison(true)
-
-        const heightData = await getTreeHeight()
-        setTreeHeight(heightData.height)
-        const bfData = await getBalanceFactor()
-        setBalanceFactor(bfData.balance_factor)
-      } else if (loadType === LOAD_MODE_INSERTION) {
-        const text = await file.text()
-        const data = JSON.parse(text)
-        const flights = parseInsertionFlights(data)
-
-        if (!flights.length) {
-          alert('El archivo no contiene vuelos válidos para inserción.')
-          return
-        }
-
-        await resetTree()
-        setTree(null)
-        setBstTree(null)
-        setComparisonData(null)
-        setShowComparison(false)
-
-        for (let i = 0; i < flights.length; i += 1) {
-          const { number } = flights[i]
-          await insertValue(number)
-          const treeData = await getTree()
-          setTree(treeData.tree)
-          const heightData = await getTreeHeight()
-          setTreeHeight(heightData.height)
-          const bfData = await getBalanceFactor()
-          setBalanceFactor(bfData.balance_factor)
-          await new Promise((resolve) => setTimeout(resolve, 1000))
-        }
-
-        const comparisonResult = await getTreeComparison()
-        setComparisonData(comparisonResult.comparison)
-        setBstTree(comparisonResult.trees.bst)
-        setShowComparison(true)
-      }
-    } catch (error) {
-      console.error('Error cargando archivo:', error)
-      alert('Error al cargar el archivo JSON')
+      const data = await getTraversal(mode)
+      setTraversalMode(data.mode)
+      setTraversalResult(data.result)
+    } catch (err) {
+      console.error('Error en recorrido:', err)
+      alert(`❌ Error en recorrido: ${err.message}`)
     }
   }
 
   const handleExport = async () => {
     try {
-      const blob = await exportToJSON()
-      const url = window.URL.createObjectURL(blob)
-      const anchor = document.createElement('a')
-      anchor.href = url
-      anchor.download = 'avl_tree.json'
-      document.body.appendChild(anchor)
-      anchor.click()
-      window.URL.revokeObjectURL(url)
-      document.body.removeChild(anchor)
-    } catch (error) {
-      console.error('Error exportando:', error)
-      alert('Error al exportar el árbol')
+      await exportTree()
+      alert('✅ Árbol exportado exitosamente como skybalance_avl.json')
+    } catch (err) {
+      console.error('Error exportando árbol:', err)
+      alert(`❌ Error exportando árbol: ${err.message}`)
     }
   }
 
-  const handleShowComparison = (visible) => {
-    if (visible === false) {
-      setShowComparison(false)
+  const handleShowComparison = (show) => {
+    if (show === true && !comparisonData) {
+      alert('⚠️ Primero carga un archivo en Modo Inserción para ver la comparación')
       return
     }
+    
+    if (show === false) {
+      setShowComparison(false)
+    } else if (show === true && comparisonData) {
+      setShowComparison(true)
+    }
+  }
 
-    return getTreeComparison()
-      .then((result) => {
-        setComparisonData(result.comparison)
-        setTree(result.trees.avl)
-        setBstTree(result.trees.bst)
-        setShowComparison(true)
-      })
-      .catch((error) => {
-        console.error('Error obteniendo comparación:', error)
-      })
+  const handleDepthLimitChange = async (limit) => {
+    try {
+      const result = await updateDepthLimit(limit)
+      setTree(result.tree.root)
+      await refreshMetrics()
+    } catch (err) {
+      console.error('Error actualizando límite de profundidad:', err)
+      alert(`❌ Error actualizando límite de profundidad: ${err.message}`)
+    }
+  }
+
+  const handleEliminateLeastProfitable = async () => {
+    try {
+      const result = await eliminateLeastProfitable()
+      console.log('Vuelo eliminado:', result)
+      // Mostrar alerta al usuario
+      if (result.eliminated_code) {
+        alert(`✅ Vuelo ${result.eliminated_code} eliminado!\n\nRentabilidad: $${result.eliminated_rentability}\nNodos eliminados: ${result.subtree_size_removed}`)
+      }
+      await loadTree()
+      await refreshMetrics()
+    } catch (err) {
+      console.error('Error eliminando vuelo:', err)
+      alert(`❌ Error: ${err.message}`)
+    }
+  }
+
+  const handleEnableStress = async () => {
+    try {
+      await enableStressMode()
+      setStressMode(true)
+      setAuditReport(null)
+      alert('✅ Modo estrés habilitado')
+    } catch (err) {
+      console.error('Error habilitando modo estrés:', err)
+      alert(`❌ Error: ${err.message}`)
+    }
+  }
+
+  const handleDisableStress = async () => {
+    try {
+      await disableStressMode()
+      setStressMode(false)
+      setAuditReport(null)
+      alert('✅ Modo estrés deshabilitado')
+    } catch (err) {
+      console.error('Error deshabilitando modo estrés:', err)
+      alert(`❌ Error: ${err.message}`)
+    }
+  }
+
+  const handleRebalance = async () => {
+    if (stressMode) {
+      alert('⚠️ No puedes rebalancear en modo estrés. Deshabilita el modo primero.')
+      return
+    }
+    try {
+      const result = await rebalanceTree()
+      setTree(result.tree.root)
+      const rotations = result.rotations_applied || 0
+      alert(`✅ Árbol rebalanceado\n\nRotaciones aplicadas: ${rotations}`)
+      await refreshMetrics()
+    } catch (err) {
+      console.error('Error rebalanceando:', err)
+      alert(`❌ Error: ${err.message}`)
+    }
+  }
+
+  const handleAudit = async () => {
+    if (!stressMode) {
+      alert('⚠️ La auditoría solo está disponible en modo estrés')
+      return
+    }
+    try {
+      const result = await auditTree()
+      setAuditReport(result)
+    } catch (err) {
+      console.error('Error en auditoría:', err)
+      alert(`❌ Error: ${err.message}`)
+    }
   }
 
   return {
@@ -254,13 +315,15 @@ const useAvlTree = () => {
     value,
     setValue,
     searchResult,
-    treeHeight,
+    treeHeight: calculateHeight(tree),
     balanceFactor,
     traversalMode,
     traversalResult,
     comparisonData,
     showComparison,
-    loadTree,
+    metrics,
+    stressMode,
+    auditReport,
     handleFileLoad,
     handleInsert,
     handleDelete,
@@ -271,7 +334,15 @@ const useAvlTree = () => {
     handleReset,
     handleTraversal,
     handleExport,
-    handleShowComparison
+    handleShowComparison,
+    handleDepthLimitChange,
+    handleEliminateLeastProfitable,
+    handleEnableStress,
+    handleDisableStress,
+    handleRebalance,
+    handleAudit,
+    loadTree,
+    refreshMetrics
   }
 }
 

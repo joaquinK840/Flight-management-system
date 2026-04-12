@@ -1,57 +1,70 @@
-const TreeOperations = ({ value, onValueChange, onInsert, onDelete, onCancelFlight, onSearch, onUndo, onRedo, onReset, onShowComparison }) => {
+const TreeOperations = ({
+  value,
+  onValueChange,
+  onInsert,
+  onDelete,
+  onCancelFlight,
+  onSearch,
+  onShowComparison,
+  onUndo,
+  onRedo,
+  onReset,
+  onEliminateLeastProfitable,
+  onExport
+}) => {
   return (
-    <section style={{ marginBottom: '24px', padding: '20px', backgroundColor: '#ffffff', borderRadius: '16px', boxShadow: '0 10px 22px rgba(60, 72, 88, 0.08)' }}>
-      <h2 style={{ marginTop: 0 }}>Operaciones del Árbol</h2>
-
-      <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginBottom: '18px' }}>
+    <div style={{
+      marginBottom: '24px',
+      padding: '20px',
+      backgroundColor: '#f9f9f9',
+      borderRadius: '16px',
+      boxShadow: '0 10px 22px rgba(24, 110, 255, 0.08)'
+    }}>
+      <h3>Operaciones del Árbol</h3>
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
         <input
           type="number"
           value={value}
-          onChange={(event) => onValueChange(event.target.value)}
+          onChange={(e) => onValueChange(e.target.value)}
+          onKeyPress={(e) => e.key === 'Enter' && onInsert()}
           placeholder="Ingresa un valor"
-          style={{ flex: 1, minWidth: '220px', padding: '12px 14px', border: '1px solid #d1d9e6', borderRadius: '10px', fontSize: '15px' }}
+          style={{
+            flex: 1,
+            padding: '10px',
+            border: '1px solid #ccc',
+            borderRadius: '8px',
+            fontSize: '14px'
+          }}
         />
-
-        <button type="button" onClick={onInsert} style={buttonStyle('#4CAF50')}>
-          Insertar
+      </div>
+      <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+        <button onClick={onInsert} style={{ padding: '10px 20px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
+          ➕ Insertar
         </button>
-        <button type="button" onClick={onDelete} style={buttonStyle('#FF5722')}>
-          Eliminar
+        <button onClick={onSearch} style={{ padding: '10px 20px', backgroundColor: '#2196F3', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
+          🔍 Buscar
         </button>
-        <button type="button" onClick={onCancelFlight} style={buttonStyle('#9C27B0')}>
-          Cancelar Vuelo
+        <button onClick={onDelete} style={{ padding: '10px 20px', backgroundColor: '#FF9800', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
+          🗑️ Eliminar
+        </button>
+        <button onClick={onCancelFlight} style={{ padding: '10px 20px', backgroundColor: '#9C27B0', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
+          ✈️ Cancelar Vuelo
+        </button>
+        <button onClick={onEliminateLeastProfitable} style={{ padding: '10px 20px', backgroundColor: '#E91E63', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
+          💰 Eliminar Menor Rentabilidad
+        </button>
+        <button onClick={onShowComparison} style={{ padding: '10px 20px', backgroundColor: '#00BCD4', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
+          📊 Comparar
+        </button>
+        <button onClick={onReset} style={{ padding: '10px 20px', backgroundColor: '#f44336', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
+          🔄 Reiniciar
+        </button>
+        <button onClick={onExport} style={{ padding: '10px 20px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
+          💾 Exportar
         </button>
       </div>
-
-      <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-        <button type="button" onClick={onSearch} style={buttonStyle('#2196F3')}>
-          Buscar
-        </button>
-        <button type="button" onClick={onShowComparison} style={buttonStyle('#009688')}>
-          Mostrar Comparación
-        </button>
-        <button type="button" onClick={onUndo} style={buttonStyle('#607D8B')}>
-          ↶ Undo
-        </button>
-        <button type="button" onClick={onRedo} style={buttonStyle('#607D8B')}>
-          ↷ Redo
-        </button>
-        <button type="button" onClick={onReset} style={buttonStyle('#f44336')}>
-          Reiniciar
-        </button>
-      </div>
-    </section>
+    </div>
   )
 }
-
-const buttonStyle = (backgroundColor) => ({
-  padding: '12px 18px',
-  backgroundColor,
-  color: 'white',
-  border: 'none',
-  borderRadius: '8px',
-  cursor: 'pointer',
-  fontWeight: '700'
-})
 
 export default TreeOperations

@@ -1,47 +1,72 @@
 class Stack:
     """
-    Stack implementation using a list.
+    Estructura de datos Stack (LIFO - Last In First Out).
+    Utilizada para implementar la pila de undo en el repositorio de árboles.
     """
 
     def __init__(self):
         self.items = []
 
-    def is_empty(self):
-        """
-        Check if the stack is empty.
-        """
-        return len(self.items) == 0
-
     def push(self, item):
         """
-        Add an item to the top of the stack.
+        Agrega un elemento al tope de la pila.
+        
+        Args:
+            item: Elemento a agregar
         """
         self.items.append(item)
 
     def pop(self):
         """
-        Remove and return the item from the top of the stack.
+        Extrae y retorna el elemento del tope de la pila.
+        
+        Returns:
+            El elemento del tope, o None si la pila está vacía
+            
+        Raises:
+            IndexError: Si la pila está vacía
         """
-        if self.is_empty():
+        if len(self.items) == 0:
             raise IndexError("Pop from empty stack")
         return self.items.pop()
 
     def peek(self):
         """
-        Return the item at the top of the stack without removing it.
+        Retorna el elemento del tope sin extraerlo.
+        
+        Returns:
+            El elemento del tope, o None si la pila está vacía
         """
-        if self.is_empty():
-            raise IndexError("Peek from empty stack")
+        if len(self.items) == 0:
+            return None
         return self.items[-1]
+
+    def is_empty(self):
+        """
+        Verifica si la pila está vacía.
+        
+        Returns:
+            bool: True si no hay elementos, False en caso contrario
+        """
+        return len(self.items) == 0
 
     def size(self):
         """
-        Return the number of items in the stack.
+        Retorna la cantidad de elementos en la pila.
+        
+        Returns:
+            int: Número de elementos
         """
         return len(self.items)
 
     def clear(self):
         """
-        Clear all items from the stack.
+        Vacía completamente la pila.
         """
         self.items = []
+
+    def __str__(self):
+        return f"Stack({self.items})"
+
+    def __repr__(self):
+        return self.__str__()
