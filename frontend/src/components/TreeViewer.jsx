@@ -1,42 +1,47 @@
 import React from 'react'
 
 const TreeViewer = ({ tree }) => {
-  const renderNode = (node, depth = 0) => {
-    if (!node) {
-      return null
+  const formatValue = (value) => {
+    if (value && typeof value === 'object') {
+      if ('codigo' in value) return value.codigo
+      return JSON.stringify(value)
     }
+    return value
+  }
 
-    const paddingLeft = depth * 30
+  const renderNode = (node) => {
+    if (!node) return null
 
     return (
-      <div key={`${node.value}-${depth}`} style={{ marginLeft: `${paddingLeft}px` }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <div
           style={{
             padding: '8px 12px',
-            margin: '5px 0',
             backgroundColor: '#4CAF50',
             color: 'white',
             borderRadius: '4px',
             display: 'inline-block',
-            fontWeight: 'bold'
+            fontWeight: 'bold',
+            minWidth: '32px',
+            textAlign: 'center'
           }}
         >
-          {node.value}
+          {formatValue(node.value)}
         </div>
         {(node.left || node.right) && (
-          <div style={{ marginLeft: '20px', borderLeft: '2px solid #999', paddingLeft: '10px' }}>
-            {node.left && (
-              <div>
-                <span style={{ color: '#666', fontSize: '12px' }}>L:</span>
-                {renderNode(node.left, depth + 1)}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '16px' }}>
+            <div style={{ width: '2px', height: '16px', backgroundColor: '#999' }} />
+            <div style={{ width: '100%', borderTop: '2px solid #999', margin: '6px 0 10px' }} />
+            <div style={{ display: 'flex', gap: '40px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <div style={{ width: '2px', height: '16px', backgroundColor: '#999' }} />
+                {node.left ? renderNode(node.left) : <div style={{ width: '32px', height: '32px' }} />}
               </div>
-            )}
-            {node.right && (
-              <div>
-                <span style={{ color: '#666', fontSize: '12px' }}>R:</span>
-                {renderNode(node.right, depth + 1)}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <div style={{ width: '2px', height: '16px', backgroundColor: '#999' }} />
+                {node.right ? renderNode(node.right) : <div style={{ width: '32px', height: '32px' }} />}
               </div>
-            )}
+            </div>
           </div>
         )}
       </div>
@@ -47,7 +52,7 @@ const TreeViewer = ({ tree }) => {
     <div style={{ padding: '20px', backgroundColor: '#f5f5f5', borderRadius: '8px', marginTop: '20px' }}>
       <h2>Estructura del Árbol AVL</h2>
       {tree ? (
-        <div style={{ fontFamily: 'monospace' }}>
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
           {renderNode(tree)}
         </div>
       ) : (

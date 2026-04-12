@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react'
 import './App.css'
+import UploadControls from './components/UploadControls'
 import TreeViewer from './components/TreeViewer'
-import { getTree, insertValue, resetTree, searchValue } from './services/avlService'
+import { deleteValue, getTree, insertValue, resetTree, searchValue } from './services/avlService'
 
 function App() {
   const [tree, setTree] = useState(null)
-  const [rotations, setRotations] = useState(null)
-  const [showRotations, setShowRotations] = useState(false)
   const [value, setValue] = useState('')
   const [searchResult, setSearchResult] = useState(null)
 
@@ -18,9 +17,7 @@ function App() {
     try {
       const data = await getTree()
       const treeRoot = data?.tree?.root ?? data?.tree ?? null
-      const rotationData = data?.tree?.rotations ?? null
       setTree(treeRoot)
-      setRotations(rotationData)
     } catch (error) {
       console.error('Error cargando el árbol:', error)
     }
@@ -47,12 +44,21 @@ function App() {
     }
   }
 
+  const handleDelete = async () => {
+    if (!value) return
+    try {
+      await deleteValue(parseInt(value))
+      setValue('')
+      loadTree()
+    } catch (error) {
+      console.error('Error eliminando:', error)
+    }
+  }
+
   const handleReset = async () => {
     try {
       await resetTree()
       setTree(null)
-      setRotations(null)
-      setShowRotations(false)
       setSearchResult(null)
     } catch (error) {
       console.error('Error reiniciando:', error)
@@ -62,6 +68,12 @@ function App() {
   return (
     <div className="App">
       <h1>🌲 Árbol AVL</h1>
+
+      <UploadControls
+        onTreeUpdate={(nextTree, nextRotations) => {
+          setTree(nextTree)
+        }}
+      />
       
       <div style={{ 
         padding: '20px', 
@@ -118,6 +130,20 @@ function App() {
             Buscar
           </button>
           <button 
+            onClick={handleDelete}
+            style={{
+              padding: '10px 20px',
+              backgroundColor: '#ff9800',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontWeight: 'bold'
+            }}
+          >
+            Eliminar
+          </button>
+          <button 
             onClick={handleReset}
             style={{
               padding: '10px 20px',
@@ -156,37 +182,6 @@ function App() {
 
       <TreeViewer tree={tree} />
 
-      {rotations && (
-        <div style={{
-          padding: '12px',
-          backgroundColor: '#fff7e6',
-          borderLeft: '4px solid #ffb300',
-          borderRadius: '4px',
-          marginTop: '20px',
-          maxWidth: '500px',
-          margin: '20px auto 0'
-        }}>
-          <button
-            onClick={() => setShowRotations((prev) => !prev)}
-            style={{
-              padding: '6px 12px',
-              backgroundColor: '#ffb300',
-              color: '#1f1f1f',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontWeight: 'bold'
-            }}
-          >
-            {showRotations ? 'Ocultar detalles' : 'Ver detalles'}
-          </button>
-          {showRotations && (
-            <p style={{ marginTop: '10px' }}>
-              Rotaciones: LL {rotations.LL ?? 0} | RR {rotations.RR ?? 0} | LR {rotations.LR ?? 0} | RL {rotations.RL ?? 0}
-            </p>
-          )}
-        </div>
-      )}
     </div>
   )
 }

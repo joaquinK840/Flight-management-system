@@ -85,3 +85,41 @@ export const cancelValue = async (value) => {
         throw error;
     }
 };
+
+export const loadJson = async (payload) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/avl/load-json`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        });
+        if (!response.ok) {
+            throw new Error('Error al cargar el JSON');
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error en loadJson:', error);
+        throw error;
+    }
+};
+
+export const setDepthLimit = async (limit) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/avl/config/depth-limit`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ limit }),
+        });
+        if (!response.ok) {
+            throw new Error('Error al actualizar la profundidad límite');
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error en setDepthLimit:', error);
+        throw error;
+    }
+};
