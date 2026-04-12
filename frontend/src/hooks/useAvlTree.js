@@ -54,18 +54,30 @@ const useAvlTree = () => {
     try {
       const data = await loadFile(file)
       
-      // Si hay comparación, mostrarla
-      if (data.comparison && data.comparison.avl_height) {
-        setBstTree(data.bst.tree)
+      // Actualizar árboles
+      setTree(data.avl.tree)
+      setBstTree(data.bst.tree)
+      
+      // Guardar datos de comparación con métricas reales del servidor
+      if (data.avl.metrics && data.bst.metrics) {
         setComparisonData({
-          avl: data.comparison.avl,
-          bst: data.comparison.bst
+          avl: {
+            height: data.avl.metrics.height,
+            nodes: data.avl.metrics.total_nodes,
+            leaves: data.avl.metrics.leaves,
+            rotations: data.avl.metrics.total_rotations,
+            rotationDetail: data.avl.metrics.rotations
+          },
+          bst: {
+            height: data.bst.metrics.height,
+            nodes: data.bst.metrics.total_nodes,
+            leaves: data.bst.metrics.leaves
+          },
+          comparison: data.comparison
         })
         setShowComparison(true)
       }
       
-      // Actualizar árbol principal
-      setTree(data.avl.tree)
       await refreshMetrics()
     } catch (err) {
       console.error('Error cargando archivo:', err)
@@ -199,12 +211,15 @@ const useAvlTree = () => {
   }
 
   const handleShowComparison = (show) => {
-    setShowComparison(show !== false)
-    if (show) {
-      setComparisonData({
-        avl: { height: calculateHeight(tree), nodes: countNodes(tree), rotations: metrics?.rotation_counts?.total || 0 },
-        bst: { height: calculateHeight(tree), nodes: countNodes(tree), balanced: false }
-      })
+    if (show === true && !comparisonData) {
+      alert('⚠️ Primero carga un archivo en Modo Inserción para ver la comparación')
+      return
+    }
+    
+    if (show === false) {
+      setShowComparison(false)
+    } else if (show === true && comparisonData) {
+      setShowComparison(true)
     }
   }
 

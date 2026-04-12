@@ -1,4 +1,16 @@
 const TreeComparison = ({ data, onClose }) => {
+  const renderRotationDetail = (detail) => {
+    if (!detail) return 'N/A'
+    return (
+      <div style={{ fontSize: '12px', marginLeft: '8px', fontFamily: 'monospace' }}>
+        {detail.LL && <div>L: {detail.LL}</div>}
+        {detail.RR && <div>R: {detail.RR}</div>}
+        {detail.LR && <div>LR: {detail.LR}</div>}
+        {detail.RL && <div>RL: {detail.RL}</div>}
+      </div>
+    )
+  }
+
   return (
     <div style={{
       position: 'fixed',
@@ -10,7 +22,7 @@ const TreeComparison = ({ data, onClose }) => {
       borderRadius: '12px',
       boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
       zIndex: 1000,
-      maxWidth: '500px',
+      maxWidth: '550px',
       width: '90%',
       maxHeight: '80vh',
       overflowY: 'auto'
@@ -38,17 +50,24 @@ const TreeComparison = ({ data, onClose }) => {
           <div>
             <h3 style={{ textAlign: 'center', color: '#4CAF50' }}>Árbol AVL</h3>
             <div style={{ padding: '15px', backgroundColor: '#F1F8E9', borderRadius: '8px' }}>
-              <p><strong>Altura:</strong> {data.avl?.height || 'N/A'}</p>
-              <p><strong>Nodos:</strong> {data.avl?.nodes || 'N/A'}</p>
-              <p><strong>Rotaciones:</strong> {data.avl?.rotations || 0}</p>
+              <p><strong>Altura:</strong> {data.avl?.height ?? 'N/A'}</p>
+              <p><strong>Nodos:</strong> {data.avl?.nodes ?? 'N/A'}</p>
+              <p><strong>Hojas:</strong> {data.avl?.leaves ?? 'N/A'}</p>
+              <p><strong>Rotaciones:</strong> {data.avl?.rotations ?? 0}</p>
+              {data.avl?.rotationDetail && (
+                <div>
+                  <strong>Desglose:</strong>
+                  {renderRotationDetail(data.avl.rotationDetail)}
+                </div>
+              )}
             </div>
           </div>
           <div>
             <h3 style={{ textAlign: 'center', color: '#2196F3' }}>Árbol BST</h3>
             <div style={{ padding: '15px', backgroundColor: '#E3F2FD', borderRadius: '8px' }}>
-              <p><strong>Altura:</strong> {data.bst?.height || 'N/A'}</p>
-              <p><strong>Nodos:</strong> {data.bst?.nodes || 'N/A'}</p>
-              <p><strong>Balance:</strong> {data.bst?.balanced ? 'Sí' : 'No'}</p>
+              <p><strong>Altura:</strong> {data.bst?.height ?? 'N/A'}</p>
+              <p><strong>Nodos:</strong> {data.bst?.nodes ?? 'N/A'}</p>
+              <p><strong>Hojas:</strong> {data.bst?.leaves ?? 'N/A'}</p>
             </div>
           </div>
         </div>
