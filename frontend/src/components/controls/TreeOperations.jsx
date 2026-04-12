@@ -1,7 +1,6 @@
 const TreeOperations = ({
   value,
   onValueChange,
-  onInsert,
   onDelete,
   onCancelFlight,
   onSearch,
@@ -21,15 +20,16 @@ const TreeOperations = ({
       boxShadow: '0 10px 22px rgba(24, 110, 255, 0.08)'
     }}>
       <h3>Operaciones del Árbol</h3>
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+      <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '16px' }}>
         <input
           type="number"
           value={value}
           onChange={(e) => onValueChange(e.target.value)}
-          onKeyPress={(e) => e.key === 'Enter' && onInsert()}
-          placeholder="Ingresa un valor"
+          onKeyDown={(e) => e.key === 'Enter' && onSearch()}
+          placeholder="Codigo para buscar o eliminar"
           style={{
             flex: 1,
+            minWidth: '220px',
             padding: '10px',
             border: '1px solid #ccc',
             borderRadius: '8px',
@@ -38,9 +38,6 @@ const TreeOperations = ({
         />
       </div>
       <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-        <button onClick={onInsert} style={{ padding: '10px 20px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
-          ➕ Insertar
-        </button>
         <button onClick={onSearch} style={{ padding: '10px 20px', backgroundColor: '#2196F3', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
           🔍 Buscar
         </button>

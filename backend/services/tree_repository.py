@@ -186,6 +186,9 @@ class TreeRepository:
         Returns:
             Dict con árbol serializado
         """
+        if self.tree.getRoot() is None:
+            raise ValueError(f"Vuelo {codigo} no encontrado")
+
         self._save_state()
 
         try:

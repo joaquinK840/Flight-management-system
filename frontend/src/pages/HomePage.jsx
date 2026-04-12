@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react'
 import TraversalControls from '../components/controls/TraversalControls'
 import TreeOperations from '../components/controls/TreeOperations'
 import UploadControls from '../components/controls/UploadControls'
@@ -26,6 +25,7 @@ const HomePage = () => {
     metrics,
     stressMode,
     auditReport,
+    bstNote,
     handleFileLoad,
     handleInsert,
     handleDelete,
@@ -44,166 +44,43 @@ const HomePage = () => {
     handleDisableStress,
     handleRebalance,
     handleAudit,
+    clearAuditReport,
     loadTree,
-    refreshTree,
     refreshMetrics
   } = useAvlTree()
 
-  const [depthDraft, setDepthDraft] = useState(depthLimit)
-  const depthLimitValid = Number.isFinite(depthDraft)
+  const findDepthByCode = (node, code, depth = 0) => {
+    if (!node) return null
+    const nodeCode = node.codigo ?? node.value
+    if (nodeCode === code) return depth
+    const leftDepth = findDepthByCode(node.left, code, depth + 1)
+    if (leftDepth !== null) return leftDepth
+    return findDepthByCode(node.right, code, depth + 1)
+  }
 
-  useEffect(() => {
-    setDepthDraft(depthLimit)
-  }, [depthLimit])
+  const buildAuditError = (item) => {
+    const heightMismatch = item.expected_height !== item.actual_height
+    const balanceMismatch = item.expected_balance === false
+    if (heightMismatch && balanceMismatch) return 'Altura y balance'
+    if (heightMismatch) return 'Altura incorrecta'
+    if (balanceMismatch) return 'Desbalanceado'
+    return 'Inconsistencia'
+  }
 
   return (
     <div className="App" style={{ padding: '20px 24px', maxWidth: '1200px', margin: '0 auto' }}>
-      <div style={{
-        position: 'sticky',
-        top: 0,
-        zIndex: 20,
-        backgroundColor: '#0b1c2c',
-        color: 'white',
-        padding: '12px 16px',
-        borderRadius: '12px',
-        marginBottom: '16px',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        gap: '12px'
-      }}>
-        <span>{stressMode ? '⚡ Modo Estrés' : '🟢 Modo Normal'}</span>
-        <span>Profundidad crítica: {depthLimit}</span>
-      </div>
-
-      <header style={{ marginBottom: '20px' }}>
-        <h1 style={{ textAlign: 'center', marginBottom: '6px' }}>SkyBalance AVL</h1>
-        <p style={{ textAlign: 'center', color: '#5f6a72', margin: 0 }}>Sistema de Gestión de Vuelos</p>
-      </header>
-
-      <section style={{
-        marginBottom: '24px',
-        padding: '16px',
-        backgroundColor: '#f6f8fb',
-        borderRadius: '14px',
-        border: '1px solid #e1e6ef'
-      }}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <label style={{ fontWeight: 600 }}>Profundidad límite</label>
-            <input
-              type="number"
-              min="0"
-              max="20"
-              value={Number.isFinite(depthDraft) ? depthDraft : ''}
-              onChange={(e) => {
-                const raw = e.target.value
-                if (raw === '') {
-                  setDepthDraft(NaN)
-                  return
-                }
-                const parsed = parseInt(raw, 10)
-                setDepthDraft(Number.isNaN(parsed) ? NaN : parsed)
-              }}
-              style={{ padding: '8px 10px', borderRadius: '8px', border: '1px solid #c9d4e5', width: '90px' }}
-            />
-            <button
-              type="button"
-              onClick={() => depthLimitValid && handleDepthLimitChange(depthDraft)}
-              disabled={!depthLimitValid}
-              style={{
-                padding: '8px 12px',
-                borderRadius: '8px',
-                border: 'none',
-                backgroundColor: depthLimitValid ? '#fdd835' : '#ddd',
-                fontWeight: 700,
-                cursor: depthLimitValid ? 'pointer' : 'not-allowed'
-              }}
-            >
-              Aplicar
-            </button>
-          </div>
-
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
-            {!stressMode ? (
-              <button
-                onClick={handleEnableStress}
-                style={{
-                  padding: '8px 12px',
-                  backgroundColor: '#d32f2f',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontWeight: 'bold'
-                }}
-              >
-                🔥 Activar Modo Estrés
-              </button>
-            ) : (
-              <button
-                onClick={handleDisableStress}
-                style={{
-                  padding: '8px 12px',
-                  backgroundColor: '#4caf50',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontWeight: 'bold'
-                }}
-              >
-                ✅ Modo Normal
-              </button>
-            )}
-            <button
-              onClick={handleRebalance}
-              disabled={stressMode}
-              style={{
-                padding: '8px 12px',
-                backgroundColor: stressMode ? '#ccc' : '#2196f3',
-                color: 'white',
-                border: 'none',
-                borderRadius: '8px',
-                cursor: stressMode ? 'not-allowed' : 'pointer',
-                fontWeight: 'bold',
-                opacity: stressMode ? 0.6 : 1
-              }}
-            >
-              ⚖️ Rebalancear
-            </button>
-            {stressMode && (
-              <button
-                onClick={handleAudit}
-                style={{
-                  padding: '8px 12px',
-                  backgroundColor: '#ff9800',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontWeight: 'bold'
-                }}
-              >
-                🔍 Auditar AVL
-              </button>
-            )}
-          </div>
-        </div>
-      </section>
+      <h1 style={{ textAlign: 'center', marginBottom: '24px' }}>🌲 Árbol AVL - Sistema de Gestión de Vuelos</h1>
 
       <UploadControls
         onFileLoad={handleFileLoad}
         onExport={handleExport}
         onDepthLimitChange={handleDepthLimitChange}
         depthLimit={depthLimit}
-        showDepthLimit={false}
       />
 
       <TreeOperations
         value={value}
         onValueChange={setValue}
-        onInsert={handleInsert}
         onDelete={handleDelete}
         onCancelFlight={handleCancelFlight}
         onSearch={handleSearch}
@@ -215,35 +92,152 @@ const HomePage = () => {
         onExport={handleExport}
       />
 
-      {auditReport && (
-        <div style={{ marginBottom: '24px', padding: '18px', backgroundColor: '#f5f5f5', borderRadius: '14px', border: '2px solid #ff9800' }}>
-          <h3 style={{ marginTop: 0 }}>Reporte de Auditoría</h3>
-          <pre style={{ backgroundColor: '#fff', padding: '12px', borderRadius: '8px', overflow: 'auto', fontSize: '12px' }}>
-            {JSON.stringify(auditReport, null, 2)}
-          </pre>
-        </div>
-      )}
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '20px', alignItems: 'start', marginBottom: '24px' }}>
-        <MetricsPanel metrics={metrics} refreshMetrics={refreshMetrics} />
-        <TreeViewer tree={tree} title="Árbol AVL" />
+      <div style={{ marginBottom: '24px', padding: '20px', backgroundColor: '#f9f9f9', borderRadius: '16px', boxShadow: '0 10px 22px rgba(24, 110, 255, 0.08)' }}>
+        <TraversalControls onTraversal={handleTraversal} />
       </div>
 
-      {showComparison && bstTree && (
-        <div style={{ marginBottom: '24px' }}>
-          <TreeViewer tree={bstTree} title="BST (sin balanceo)" />
+      {stressMode && (
+        <div style={{ marginBottom: '24px', padding: '18px', backgroundColor: '#d32f2f', color: 'white', borderRadius: '14px', fontWeight: 'bold', fontSize: '16px' }}>
+          ⚠️ MODO ESTRÉS ACTIVO - Sin balanceo automático
         </div>
       )}
 
-      <details style={{ marginBottom: '24px' }}>
-        <summary style={{ cursor: 'pointer', fontWeight: 700, marginBottom: '12px' }}>Versiones (colapsable)</summary>
-        <VersionPanel onVersionRestored={refreshTree} />
-      </details>
+      <div style={{ marginBottom: '24px', padding: '20px', backgroundColor: stressMode ? '#fff3e0' : '#e3f2fd', borderRadius: '16px', boxShadow: '0 10px 22px rgba(24, 110, 255, 0.08)' }}>
+        <h3 style={{ marginTop: 0 }}>{stressMode ? '🔥' : '✅'} Modo Estrés</h3>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          {!stressMode ? (
+            <button
+              onClick={handleEnableStress}
+              style={{
+                padding: '10px 16px',
+                backgroundColor: '#d32f2f',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                fontSize: '14px'
+              }}
+            >
+              🔥 Activar Modo Estrés
+            </button>
+          ) : (
+            <button
+              onClick={handleDisableStress}
+              style={{
+                padding: '10px 16px',
+                backgroundColor: '#4caf50',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                fontSize: '14px'
+              }}
+            >
+              ✅ Modo Normal
+            </button>
+          )}
+          <button
+            onClick={handleRebalance}
+            disabled={stressMode}
+            style={{
+              padding: '10px 16px',
+              backgroundColor: stressMode ? '#ccc' : '#2196f3',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: stressMode ? 'not-allowed' : 'pointer',
+              fontWeight: 'bold',
+              fontSize: '14px',
+              opacity: stressMode ? 0.6 : 1
+            }}
+          >
+            ⚖️ Rebalancear
+          </button>
+          {stressMode && (
+            <button
+              onClick={handleAudit}
+              style={{
+                padding: '10px 16px',
+                backgroundColor: '#ff9800',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                fontSize: '14px'
+              }}
+            >
+              🔍 Auditar AVL
+            </button>
+          )}
+        </div>
+      </div>
 
-      <details style={{ marginBottom: '24px' }}>
-        <summary style={{ cursor: 'pointer', fontWeight: 700, marginBottom: '12px' }}>Cola de inserción (colapsable)</summary>
-        <QueueControlComponent onQueueUpdated={refreshTree} />
-      </details>
+      {auditReport && (
+        <div
+          style={{
+            marginBottom: '24px',
+            padding: '18px',
+            borderRadius: '14px',
+            border: `2px solid ${auditReport.valid ? '#4caf50' : '#f44336'}`,
+            backgroundColor: auditReport.valid ? '#e8f5e9' : '#ffebee'
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
+            <div style={{ fontWeight: '700' }}>
+              {auditReport.valid
+                ? `✅ Árbol válido — ${auditReport.nodes_checked} nodos verificados sin inconsistencias`
+                : `⚠ Se encontraron ${auditReport.inconsistent_nodes?.length || 0} nodos inconsistentes`}
+            </div>
+            <button
+              onClick={clearAuditReport}
+              style={{
+                backgroundColor: 'transparent',
+                border: 'none',
+                fontSize: '16px',
+                cursor: 'pointer'
+              }}
+              aria-label="Cerrar reporte"
+            >
+              ✕
+            </button>
+          </div>
+
+          {!auditReport.valid && (
+            <div style={{ marginTop: '16px', overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                <thead>
+                  <tr style={{ backgroundColor: '#ffcdd2' }}>
+                    <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #ef9a9a' }}>Codigo</th>
+                    <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #ef9a9a' }}>Profundidad</th>
+                    <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #ef9a9a' }}>Factor Balance</th>
+                    <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #ef9a9a' }}>Altura Real</th>
+                    <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #ef9a9a' }}>Altura Esperada</th>
+                    <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #ef9a9a' }}>Error</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {auditReport.inconsistent_nodes?.map((item) => {
+                    const depth = findDepthByCode(tree, item.codigo)
+                    return (
+                      <tr key={`audit-${item.codigo}`}>
+                        <td style={{ padding: '8px', borderBottom: '1px solid #ef9a9a' }}>{item.codigo}</td>
+                        <td style={{ padding: '8px', borderBottom: '1px solid #ef9a9a' }}>{depth ?? '-'}</td>
+                        <td style={{ padding: '8px', borderBottom: '1px solid #ef9a9a' }}>{item.balance_factor}</td>
+                        <td style={{ padding: '8px', borderBottom: '1px solid #ef9a9a' }}>{item.actual_height}</td>
+                        <td style={{ padding: '8px', borderBottom: '1px solid #ef9a9a' }}>{item.expected_height}</td>
+                        <td style={{ padding: '8px', borderBottom: '1px solid #ef9a9a' }}>{buildAuditError(item)}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
 
       {tree && <TreeInfo tree={tree} treeHeight={treeHeight} balanceFactor={balanceFactor} />}
 
@@ -254,10 +248,6 @@ const HomePage = () => {
           <p><strong>Encontrado:</strong> {searchResult.found ? '✓ Sí' : '✗ No'}</p>
         </div>
       )}
-
-      <div style={{ marginBottom: '24px', padding: '20px', backgroundColor: '#f9f9f9', borderRadius: '16px', boxShadow: '0 10px 22px rgba(24, 110, 255, 0.08)' }}>
-        <TraversalControls onTraversal={handleTraversal} />
-      </div>
 
       {traversalResult && (
         <div style={{ marginBottom: '24px', padding: '18px', backgroundColor: '#FFF3E0', borderRadius: '14px' }}>
@@ -278,6 +268,34 @@ const HomePage = () => {
       {showComparison && comparisonData && (
         <TreeComparison data={comparisonData} onClose={() => handleShowComparison(false)} />
       )}
+
+      <MetricsPanel metrics={metrics} refreshMetrics={refreshMetrics} />
+
+      <VersionPanel onVersionRestored={loadTree} />
+
+      <div style={{ marginBottom: '24px', padding: '20px', backgroundColor: '#f9f9f9', borderRadius: '16px', boxShadow: '0 10px 22px rgba(24, 110, 255, 0.08)' }}>
+        <h3 style={{ marginTop: 0, marginBottom: '16px' }}>📋 Cola de Concurrencia</h3>
+        <QueueControlComponent
+          onQueueUpdated={async () => {
+            await loadTree()
+            await refreshMetrics()
+          }}
+        />
+      </div>
+
+      <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', justifyContent: 'center' }}>
+        <TreeViewer tree={tree} title="Árbol AVL" />
+        {showComparison && bstTree && (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <TreeViewer tree={bstTree} title="Árbol BST (Comparación)" />
+            {bstNote && (
+              <div style={{ marginTop: '8px', maxWidth: '420px', textAlign: 'center', color: '#b45309', fontSize: '12px' }}>
+                {bstNote}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
