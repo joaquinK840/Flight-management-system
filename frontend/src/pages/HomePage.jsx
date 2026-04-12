@@ -5,6 +5,7 @@ import TreeComparison from '../components/TreeComparison'
 import TreeInfo from '../components/TreeInfo'
 import TreeViewer from '../components/TreeViewer'
 import MetricsPanel from '../components/MetricsPanel'
+import VersionPanel from '../components/VersionPanel'
 import useAvlTree from '../hooks/useAvlTree'
 
 const HomePage = () => {
@@ -191,6 +192,8 @@ const HomePage = () => {
       )}
 
       <MetricsPanel metrics={metrics} refreshMetrics={refreshMetrics} />
+
+      <VersionPanel onVersionRestored={loadTree} />
 
       <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', justifyContent: 'center' }}>
         <TreeViewer tree={tree} title="Árbol AVL" />

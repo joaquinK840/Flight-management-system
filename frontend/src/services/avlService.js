@@ -302,3 +302,65 @@ export const auditTree = async () => {
         throw error;
     }
 };
+
+export const listVersions = async () => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/versions/list`);
+        if (!response.ok) {
+            throw new Error('Error listando versiones');
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error en listVersions:', error);
+        throw error;
+    }
+};
+
+export const saveVersion = async (name) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/versions/save`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ name }),
+        });
+        if (!response.ok) {
+            throw new Error('Error guardando versión');
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error en saveVersion:', error);
+        throw error;
+    }
+};
+
+export const restoreVersion = async (name) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/versions/restore/${name}`, {
+            method: 'POST',
+        });
+        if (!response.ok) {
+            throw new Error('Error restaurando versión');
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error en restoreVersion:', error);
+        throw error;
+    }
+};
+
+export const deleteVersion = async (name) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/versions/${name}`, {
+            method: 'DELETE',
+        });
+        if (!response.ok) {
+            throw new Error('Error eliminando versión');
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error en deleteVersion:', error);
+        throw error;
+    }
+};

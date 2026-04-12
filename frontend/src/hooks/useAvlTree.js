@@ -322,6 +322,7 @@ const useAvlTree = () => {
     handleDisableStress,
     handleRebalance,
     handleAudit,
+    loadTree,
     refreshMetrics
   }
 }
