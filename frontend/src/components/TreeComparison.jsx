@@ -29,7 +29,7 @@ const TreeComparison = ({ data, onClose }) => {
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <h2 style={{ margin: 0 }}>📊 Comparación AVL vs BST</h2>
-        <button 
+        <button
           onClick={onClose}
           style={{
             backgroundColor: '#f44336',

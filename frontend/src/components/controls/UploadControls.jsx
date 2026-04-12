@@ -32,10 +32,10 @@ const UploadControls = ({ onFileLoad, onExport, onDepthLimitChange }) => {
       </p>
 
       {/* PROMPT 2: Profundidad Límite Crítica */}
-      <div style={{ 
-        marginBottom: '20px', 
-        padding: '16px', 
-        backgroundColor: '#fff9c4', 
+      <div style={{
+        marginBottom: '20px',
+        padding: '16px',
+        backgroundColor: '#fff9c4',
         borderRadius: '8px',
         border: '2px solid #FDD835'
       }}>

@@ -29,9 +29,7 @@ const TreeInfo = ({ tree, treeHeight, balanceFactor }) => {
         </div>
         <div>
           <strong>Nodos Totales:</strong>
-          <p style={{ fontSize: '18px', margin: '5px 0 0 0', color: '#2E7D32' }}>
-            {tree ? countNodes(tree) : 0}
-          </p>
+          <p style={{ fontSize: '18px', margin: '5px 0 0 0', color: '#2E7D32' }}>{tree ? countNodes(tree) : 0}</p>
         </div>
         <div>
           <strong>Hojas:</strong>

@@ -1,7 +1,7 @@
 class Flight:
     """
     Model representing a flight with all its associated data.
-    
+
     Attributes:
         codigo: Flight identifier (numeric)
         prioridad: Priority level (default: 0 for topology mode)
@@ -14,9 +14,9 @@ class Flight:
         promocion: Whether flight has a promotion
         alerta: Alert flag
     """
-    
-    def __init__(self, codigo, origen="", destino="", horaSalida="", 
-                 precioBase=0, pasajeros=0, prioridad=0, promocion=False, 
+
+    def __init__(self, codigo, origen="", destino="", horaSalida="",
+                 precioBase=0, pasajeros=0, prioridad=0, promocion=False,
                  alerta=False, precioFinal=None):
         self.codigo = codigo
         self.prioridad = prioridad
@@ -28,21 +28,21 @@ class Flight:
         self.pasajeros = pasajeros
         self.promocion = promocion
         self.alerta = alerta
-    
+
     @classmethod
     def from_dict(cls, data):
         """
         Create a Flight instance from a dictionary.
-        
+
         Args:
             data: Dictionary containing flight information
-            
+
         Returns:
             Flight instance
         """
         if data is None:
             return None
-        
+
         # Extract code from 'codigo' field, removing 'SB' prefix if present
         codigo = data.get('codigo')
         if isinstance(codigo, str) and codigo.startswith('SB'):
@@ -52,7 +52,7 @@ class Flight:
                 codigo = int(codigo) if codigo.isdigit() else codigo
         else:
             codigo = int(codigo) if isinstance(codigo, (int, str)) else codigo
-        
+
         return cls(
             codigo=codigo,
             prioridad=data.get('prioridad', 0),
@@ -65,11 +65,11 @@ class Flight:
             promocion=data.get('promocion', False),
             alerta=data.get('alerta', False)
         )
-    
+
     def to_dict(self):
         """
         Convert Flight instance to dictionary.
-        
+
         Returns:
             Dictionary representation of the flight
         """
@@ -85,6 +85,6 @@ class Flight:
             'promocion': self.promocion,
             'alerta': self.alerta
         }
-    
+
     def __repr__(self):
         return f"Flight({self.codigo}, {self.origen}->{self.destino}, ${self.precioFinal})"
