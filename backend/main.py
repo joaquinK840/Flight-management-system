@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routes.avl_routes import router
+from routes.avl_routes import router as avl_router
+from routes.flight_routes import router as flight_router
 
 cors_origins = [
     "http://localhost:5173",
@@ -19,4 +20,5 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(router)
+app.include_router(avl_router)
+app.include_router(flight_router)

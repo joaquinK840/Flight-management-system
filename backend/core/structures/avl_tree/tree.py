@@ -50,6 +50,15 @@ class AVL:
             return 1
         return self._contar_hojas_recursivo(node.getLeftChild()) + self._contar_hojas_recursivo(node.getRightChild())
 
+    def contar_nodos(self):
+        """Contar el número total de nodos en el árbol."""
+        return self._contar_nodos_recursivo(self.root)
+
+    def _contar_nodos_recursivo(self, node):
+        if node is None:
+            return 0
+        return 1 + self._contar_nodos_recursivo(node.getLeftChild()) + self._contar_nodos_recursivo(node.getRightChild())
+
     def cancelar_vuelo(self, value):
         """Cancelar un vuelo (incrementar contador de cancelaciones masivas)."""
         self.mass_cancellation_count += 1
