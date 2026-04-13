@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getTree, insertValue, searchValue, resetTree, getMetrics, eliminateLeastProfitable, exportTree, loadFile, insertFlight, deleteFlight, cancelFlight, undoOperation, redoOperation, getTraversal, updateDepthLimit, enableStressMode, disableStressMode, rebalanceTree, auditTree } from '../services/avlService'
+import { getTree, searchValue, resetTree, getMetrics, eliminateLeastProfitable, exportTree, loadFile, insertFlight, deleteValue, cancelValue, undoOperation, redoOperation, getTraversal, updateDepthLimit, enableStressMode, disableStressMode, rebalanceTree, auditTree } from '../services/avlService'
 
 const useAvlTree = () => {
   const [tree, setTree] = useState(null)
@@ -16,6 +16,7 @@ const useAvlTree = () => {
   const [stressMode, setStressMode] = useState(false)
   const [depthLimit, setDepthLimit] = useState(3)
   const [auditReport, setAuditReport] = useState(null)
+  const [bstNote, setBstNote] = useState('')
 
   useEffect(() => {
     refreshTree()
@@ -42,7 +43,6 @@ const useAvlTree = () => {
       console.error('Error cargando árbol:', err)
     }
   }
-
   const refreshMetrics = async () => {
     try {
       const metricsData = await getMetrics()
@@ -68,8 +68,13 @@ const useAvlTree = () => {
       const data = await loadFile(file, loadType)
       
       // Actualizar árboles
-      setTree(data.avl.tree)
+      setTree(data.avl.tree.root)
       setBstTree(data.bst.tree.root)
+      if (data.load_type === 'topology') {
+        setBstNote('BST construido insertando los mismos vuelos en orden inorden — sin balanceo automático')
+      } else {
+        setBstNote('')
+      }
       
       // Guardar datos de comparación con métricas reales del servidor
       if (data.avl.metrics && data.bst.metrics) {
@@ -91,33 +96,34 @@ const useAvlTree = () => {
         setShowComparison(true)
       }
       
-      await refreshTree()
+      await refreshMetrics()
     } catch (err) {
       console.error('Error cargando archivo:', err)
       alert(`❌ Error cargando archivo: ${err.message}`)
     }
   }
 
-  const handleInsert = async () => {
-    if (!value) return
+  const handleInsert = async (flightData) => {
+    if (!flightData) return
     try {
-      const codigo = parseInt(value)
-      const flightData = {
-        codigo,
-        origen: 'N/A',
-        destino: 'N/A',
-        horaSalida: '00:00',
-        precioBase: 0.0,
-        pasajeros: 0,
-        prioridad: 0,
-        promocion: false,
-        alerta: 'normal',
-        precioFinal: 0.0
+      const codigo = parseInt(flightData.codigo, 10)
+      if (Number.isNaN(codigo)) {
+        alert('❌ Valor inválido')
+        return
       }
-      const result = await insertFlight(flightData)
+      const payload = {
+        codigo,
+        origen: String(flightData.origen || '').trim(),
+        destino: String(flightData.destino || '').trim(),
+        horaSalida: String(flightData.horaSalida || '00:00').trim(),
+        precioBase: parseFloat(flightData.precioBase || 0),
+        pasajeros: parseInt(flightData.pasajeros || 0, 10),
+        prioridad: parseInt(flightData.prioridad || 1, 10),
+        promocion: Boolean(flightData.promocion)
+      }
+      const result = await insertFlight(payload)
       setTree(result.tree.root)
-      setValue('')
-      await refreshTree()
+      await refreshMetrics()
     } catch (err) {
       console.error('Error insertando vuelo:', err)
       alert(`❌ Error insertando vuelo: ${err.message}`)
@@ -128,10 +134,10 @@ const useAvlTree = () => {
     if (!value) return
     try {
       const codigo = parseInt(value)
-      const result = await deleteFlight(codigo)
-      setTree(result.tree.root)
+      const result = await deleteValue(codigo)
+      setTree(result.tree)
       setValue('')
-      await refreshTree()
+      await refreshMetrics()
     } catch (err) {
       console.error('Error eliminando vuelo:', err)
       alert(`❌ Error eliminando vuelo: ${err.message}`)
@@ -142,12 +148,11 @@ const useAvlTree = () => {
     if (!value) return
     try {
       const codigo = parseInt(value)
-      const result = await cancelFlight(codigo)
-      setTree(result.tree.root)
-      const nodesCanceled = result.nodes_canceled || 1
-      alert(`✅ Vuelo ${codigo} cancelado!\n\nNodos cancelados: ${nodesCanceled}`)
+      const result = await cancelValue(codigo)
+      setTree(result.tree)
+      alert(`✅ Vuelo ${codigo} cancelado!`)
       setValue('')
-      await refreshTree()
+      await refreshMetrics()
     } catch (err) {
       console.error('Error cancelando vuelo:', err)
       alert(`❌ Error cancelando vuelo: ${err.message}`)
@@ -168,7 +173,7 @@ const useAvlTree = () => {
     try {
       const result = await undoOperation()
       setTree(result.tree.root)
-      await refreshTree()
+      await refreshMetrics()
     } catch (err) {
       if (err.status === 400) {
         alert('No hay operaciones para deshacer')
@@ -183,7 +188,7 @@ const useAvlTree = () => {
     try {
       const result = await redoOperation()
       setTree(result.tree.root)
-      await refreshTree()
+      await refreshMetrics()
     } catch (err) {
       if (err.status === 400) {
         alert('No hay operaciones para rehacer')
@@ -199,7 +204,7 @@ const useAvlTree = () => {
       await resetTree()
       setTree(null)
       setSearchResult(null)
-      await refreshTree()
+      await loadTree()
     } catch (err) {
       console.error('Error reiniciando:', err)
     }
@@ -227,14 +232,6 @@ const useAvlTree = () => {
   }
 
   const handleShowComparison = (show) => {
-    if (show === undefined) {
-      if (!comparisonData) {
-        alert('⚠️ Primero carga un archivo en Modo Inserción para ver la comparación')
-        return
-      }
-      setShowComparison((prev) => !prev)
-      return
-    }
     if (show === true && !comparisonData) {
       alert('⚠️ Primero carga un archivo en Modo Inserción para ver la comparación')
       return
@@ -254,7 +251,7 @@ const useAvlTree = () => {
       if (typeof result.depth_limit === 'number') {
         setDepthLimit(result.depth_limit)
       }
-      await refreshTree()
+      await refreshMetrics()
     } catch (err) {
       console.error('Error actualizando límite de profundidad:', err)
       alert(`❌ Error actualizando límite de profundidad: ${err.message}`)
@@ -269,7 +266,7 @@ const useAvlTree = () => {
       if (result.eliminated_code) {
         alert(`✅ Vuelo ${result.eliminated_code} eliminado!\n\nRentabilidad: $${result.eliminated_rentability}\nNodos eliminados: ${result.subtree_size_removed}`)
       }
-      await refreshTree()
+  await refreshTree()
     } catch (err) {
       console.error('Error eliminando vuelo:', err)
       alert(`❌ Error: ${err.message}`)
@@ -278,11 +275,10 @@ const useAvlTree = () => {
 
   const handleEnableStress = async () => {
     try {
-      const result = await enableStressMode()
-      setStressMode(Boolean(result?.stress_mode))
+      await enableStressMode()
+      setStressMode(true)
       setAuditReport(null)
       alert('✅ Modo estrés habilitado')
-      await refreshTree()
     } catch (err) {
       console.error('Error habilitando modo estrés:', err)
       alert(`❌ Error: ${err.message}`)
@@ -291,11 +287,10 @@ const useAvlTree = () => {
 
   const handleDisableStress = async () => {
     try {
-      const result = await disableStressMode()
-      setStressMode(Boolean(result?.stress_mode))
+      await disableStressMode()
+      setStressMode(false)
       setAuditReport(null)
       alert('✅ Modo estrés deshabilitado')
-      await refreshTree()
     } catch (err) {
       console.error('Error deshabilitando modo estrés:', err)
       alert(`❌ Error: ${err.message}`)
@@ -309,10 +304,16 @@ const useAvlTree = () => {
     }
     try {
       const result = await rebalanceTree()
-      setTree(result.tree.root)
-      const rotations = result.rotations_applied || 0
+      if (result?.tree?.root) {
+        setTree(result.tree.root)
+      } else if (result?.tree) {
+        setTree(result.tree)
+      } else {
+        await loadTree()
+      }
+      const rotations = result.total_rotations ?? result.rotations_applied ?? 0
       alert(`✅ Árbol rebalanceado\n\nRotaciones aplicadas: ${rotations}`)
-      await refreshTree()
+      await refreshMetrics()
     } catch (err) {
       console.error('Error rebalanceando:', err)
       alert(`❌ Error: ${err.message}`)
@@ -333,6 +334,8 @@ const useAvlTree = () => {
     }
   }
 
+  const clearAuditReport = () => setAuditReport(null)
+
   return {
     tree,
     bstTree,
@@ -348,6 +351,7 @@ const useAvlTree = () => {
     metrics,
     stressMode,
     auditReport,
+    bstNote,
     handleFileLoad,
     handleInsert,
     handleDelete,
@@ -366,8 +370,8 @@ const useAvlTree = () => {
     handleDisableStress,
     handleRebalance,
     handleAudit,
+    clearAuditReport,
     loadTree,
-    refreshTree,
     refreshMetrics
   }
 }

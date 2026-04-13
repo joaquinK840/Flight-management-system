@@ -75,7 +75,8 @@ export const eliminateLeastProfitable = async () => {
             method: 'DELETE',
         });
         if (!response.ok) {
-            throw new Error('Error al eliminar vuelo de menor rentabilidad');
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.detail || `Error al eliminar vuelo de menor rentabilidad (código ${response.status})`);
         }
         return await response.json();
     } catch (error) {
@@ -158,11 +159,28 @@ export const deleteFlight = async (codigo) => {
             method: 'DELETE',
         });
         if (!response.ok) {
-            throw new Error('Error al eliminar vuelo');
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.detail || `Error al eliminar vuelo (código ${response.status})`);
         }
         return await response.json();
     } catch (error) {
         console.error('Error en deleteFlight:', error);
+        throw error;
+    }
+};
+
+export const deleteValue = async (codigo) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/avl/delete/${codigo}`, {
+            method: 'DELETE',
+        });
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.detail || `Error al eliminar valor (código ${response.status})`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error en deleteValue:', error);
         throw error;
     }
 };
@@ -179,6 +197,22 @@ export const cancelFlight = async (codigo) => {
         return await response.json();
     } catch (error) {
         console.error('Error en cancelFlight:', error);
+        throw error;
+    }
+};
+
+export const cancelValue = async (codigo) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/avl/cancel/${codigo}`, {
+            method: 'DELETE',
+        });
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.detail || `Error al cancelar valor (código ${response.status})`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error en cancelValue:', error);
         throw error;
     }
 };
@@ -454,3 +488,9 @@ export const clearQueue = async () => {
         throw error;
     }
 };
+
+// Aliases used by QueueControlComponent
+export const enqueueFlight = addToQueue;
+export const listQueue = getPendingQueue;
+export const processNextQueue = processOneFromQueue;
+export const clearQueueAvl = clearQueue;
