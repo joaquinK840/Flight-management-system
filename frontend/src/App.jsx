@@ -6,6 +6,7 @@ import Btn from "./app/components/Btn";
 import Topbar from "./app/components/Topbar";
 import Sidebar from "./app/components/Sidebar";
 import TreeView from "./app/components/TreeView";
+import TreeSummary from "./app/components/TreeSummary";
 import UploadSection from "./app/sections/UploadSection";
 import OpsSection from "./app/sections/OpsSection";
 import TraversalSection from "./app/sections/TraversalSection";
@@ -17,6 +18,7 @@ import StressSection from "./app/sections/StressSection";
 export default function App(){
   const[active,setActive]=useState("tree");
   const[tree,setTree]=useState(null),[bstTree,setBstTree]=useState(null),[bstNote,setBstNote]=useState(null);
+  const[bstMetrics,setBstMetrics]=useState(null);
   const[metrics,setMetrics]=useState(null),[stressMode,setStress]=useState(false);
   const[value,setValue]=useState(""),[searchResult,setSearch]=useState(null);
   const[traversalResult,setTrav]=useState(null),[traversalMode,setTravMode]=useState(null);
@@ -49,6 +51,7 @@ export default function App(){
       const d=await apiUpload("/avl/load-file",fd);
       setTree(extractTree(d?.avl?.tree ?? d?.avl ?? d));
       setBstTree(extractTree(d?.bst?.tree ?? d?.bst ?? null));
+      setBstMetrics(d?.bst?.metrics ?? null);
       if(d?.load_type==="topology"){
         setBstNote("BST construido insertando los mismos vuelos en orden inorden — sin balanceo automático");
       }else{
@@ -124,7 +127,7 @@ export default function App(){
 
   const section={
     upload:<UploadSection onFileLoad={handleFileLoad} onExport={handleExport} depthLimit={depthLimit} onDepthLimitChange={handleDepth}/>,
-    tree:<div>{showComparison?<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"16px"}}><TreeView tree={tree} title="Árbol AVL"/><div><TreeView tree={bstTree} title="Árbol BST (comparación)" showBst/>{bstNote&&<div style={{marginTop:"8px",fontSize:"11px",color:C.amber,textAlign:"center"}}>{bstNote}</div>}<div style={{marginTop:"10px",textAlign:"center"}}><Btn color={C.textSub} bg={C.surface3} border={C.border2} onClick={()=>{setComp(false);setBstTree(null);}}>Cerrar comparación</Btn></div></div></div>:<TreeView tree={tree} title="Árbol AVL — Sistema de vuelos"/>}</div>,
+    tree:<div>{showComparison?<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"16px"}}><div style={{display:"flex",flexDirection:"column",gap:"12px"}}><TreeSummary title="Resumen AVL" tree={tree} metrics={metrics}/><TreeView tree={tree} title="Árbol AVL"/></div><div style={{display:"flex",flexDirection:"column",gap:"12px"}}><TreeSummary title="Resumen BST" tree={bstTree} metrics={bstMetrics}/><TreeView tree={bstTree} title="Árbol BST (comparación)" showBst/>{bstNote&&<div style={{marginTop:"8px",fontSize:"11px",color:C.amber,textAlign:"center"}}>{bstNote}</div>}<div style={{marginTop:"10px",textAlign:"center"}}><Btn color={C.textSub} bg={C.surface3} border={C.border2} onClick={()=>{setComp(false);setBstTree(null);}}>Cerrar comparación</Btn></div></div></div>:<div style={{display:"flex",flexDirection:"column",gap:"12px"}}><TreeSummary title="Resumen AVL" tree={tree} metrics={metrics}/><TreeView tree={tree} title="Árbol AVL — Sistema de vuelos"/></div>}</div>,
     ops:<OpsSection value={value} setValue={setValue} handlers={handlers} searchResult={searchResult}/>,
     traversal:<TraversalSection onTraversal={handleTraversal} traversalResult={traversalResult} traversalMode={traversalMode}/>,
     metrics:<MetricsSection metrics={metrics} refreshMetrics={loadMetrics}/>,
