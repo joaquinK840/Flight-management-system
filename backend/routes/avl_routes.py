@@ -2,17 +2,14 @@ from fastapi import APIRouter, UploadFile, HTTPException, File, Depends
 from fastapi.responses import FileResponse, JSONResponse
 import json
 import io
-from core.structures.avl_tree.tree import AVL
 from core.structures.node.node import Node
+from core.shared_instances import avl
 from services.metrics import get_metrics
 from services.json_manager import load_trees_from_json, export_tree_to_json
 from services.serialize_tree import serialize_tree
 from services.stress_mode_service import rebalance_tree_postorder, audit_tree
 
 router = APIRouter(prefix="/avl", tags=["AVL Tree"])
-
-# instancia global del arbol
-avl = AVL()
 
 # instancias globales para comparacion AVL vs BST
 bst_global = None
@@ -131,9 +128,8 @@ def search_value(value: int):
 def reset_tree():
     """Reset the AVL tree state while preserving depth limit configuration."""
 
-    global avl
     current_depth_limit = avl.depth_limit
-    avl = AVL()
+    avl.root = None
     avl.depth_limit = current_depth_limit
     avl.stress_mode = False
     avl.rotation_counts = {"LL": 0, "RR": 0, "LR": 0, "RL": 0}
@@ -167,7 +163,14 @@ async def load_file(file: UploadFile = File(...)):
         json_content = content.decode("utf-8")
 
         # Cargar arboles desde JSON
-        avl, bst_global, load_type_global = load_trees_from_json(json_content)
+        loaded_avl, bst_global, load_type_global = load_trees_from_json(json_content)
+
+        # Sincronizar la instancia compartida de AVL
+        avl.root = loaded_avl.getRoot()
+        avl.rotation_counts = loaded_avl.rotation_counts
+        avl.mass_cancellation_count = loaded_avl.mass_cancellation_count
+        avl.stress_mode = loaded_avl.stress_mode
+        avl.depth_limit = loaded_avl.depth_limit
 
         # Serializar arboles
         avl_serialized = serialize_tree(avl, depth=0, depth_limit=avl.depth_limit)
@@ -238,6 +241,34 @@ async def load_file(file: UploadFile = File(...)):
 def get_tree_metrics():
     """Return real-time analytics for the AVL tree."""
     return get_metrics(avl)
+
+
+# -----------------------------
+# RECORRIDOS
+# -----------------------------
+@router.get("/traversal/{mode}")
+def get_traversal(mode: str):
+    """Return tree traversal in the specified order: pre, in, post, bfs."""
+    from core.structures.avl_tree.traversal import (
+        pre_order,
+        in_order,
+        post_order,
+        breadth_first_traversal
+    )
+
+    root = avl.getRoot()
+    traversal_map = {
+        "pre": lambda: pre_order(root),
+        "in": lambda: in_order(root),
+        "post": lambda: post_order(root),
+        "bfs": lambda: breadth_first_traversal(root)
+    }
+
+    if mode not in traversal_map:
+        raise HTTPException(status_code=400, detail=f"Modo inválido: {mode}. Usar: pre, in, post, bfs")
+
+    result = traversal_map[mode]()
+    return {"mode": mode, "result": result, "count": len(result)}
 
 
 # ========================================

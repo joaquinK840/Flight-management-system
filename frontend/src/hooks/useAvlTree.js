@@ -18,26 +18,29 @@ const useAvlTree = () => {
   const [auditReport, setAuditReport] = useState(null)
 
   useEffect(() => {
-    loadTree()
+    refreshTree()
   }, [])
 
   const loadTree = async () => {
-    try {
-      const data = await getTree()
-      // El backend retorna { root, depth_limit, rotations, metrics }
-      setTree(data.root)
-      setBalanceFactor(data.root?.balance_factor ?? 0)
-      if (typeof data.depth_limit === 'number') {
-        setDepthLimit(data.depth_limit)
-      }
-      await refreshMetrics()
-    } catch (err) {
-      console.error('Error cargando árbol:', err)
-    }
+    await refreshTree()
   }
 
   const refreshTree = async () => {
-    await loadTree()
+    try {
+      const [treeData, metricsData] = await Promise.all([
+        getTree(),
+        getMetrics()
+      ])
+      // El backend retorna { root, depth_limit, rotations, metrics }
+      setTree(treeData.root)
+      setBalanceFactor(treeData.root?.balance_factor ?? 0)
+      if (typeof treeData.depth_limit === 'number') {
+        setDepthLimit(treeData.depth_limit)
+      }
+      setMetrics(metricsData)
+    } catch (err) {
+      console.error('Error cargando árbol:', err)
+    }
   }
 
   const refreshMetrics = async () => {
@@ -266,7 +269,6 @@ const useAvlTree = () => {
       if (result.eliminated_code) {
         alert(`✅ Vuelo ${result.eliminated_code} eliminado!\n\nRentabilidad: $${result.eliminated_rentability}\nNodos eliminados: ${result.subtree_size_removed}`)
       }
-      await loadTree()
       await refreshTree()
     } catch (err) {
       console.error('Error eliminando vuelo:', err)
