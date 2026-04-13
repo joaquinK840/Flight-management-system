@@ -68,8 +68,8 @@ const useAvlTree = () => {
       const data = await loadFile(file, loadType)
       
       // Actualizar árboles
-      setTree(data.avl.tree.root)
-      setBstTree(data.bst.tree.root)
+      setTree(data.avl.tree)
+      setBstTree(data.bst.tree)
       if (data.load_type === 'topology') {
         setBstNote('BST construido insertando los mismos vuelos en orden inorden — sin balanceo automático')
       } else {
