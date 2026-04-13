@@ -33,8 +33,11 @@ def load_from_topology(json_data: dict) -> tuple:
     Returns:
         tuple: (avl, bst) reconstructed trees
     """
-    if "root" not in json_data:
-        raise ValueError("Modo topology requiere un campo 'root'")
+    root_payload = json_data.get("root") if isinstance(json_data, dict) else None
+    if root_payload is None:
+        root_payload = json_data
+    if root_payload is None:
+        raise ValueError("Modo topology requiere un nodo raíz válido")
 
     avl = AVL()
     bst = BST()
@@ -56,6 +59,10 @@ def load_from_topology(json_data: dict) -> tuple:
             del datos["left"]
         if "right" in datos:
             del datos["right"]
+        if "izquierdo" in datos:
+            del datos["izquierdo"]
+        if "derecho" in datos:
+            del datos["derecho"]
 
         node = Node(value, datos=datos if datos else None)
 
@@ -85,11 +92,10 @@ def load_from_topology(json_data: dict) -> tuple:
         return node
 
     # Reconstruir árbol desde JSON
-    root = reconstruct_node_recursive(json_data["root"])
+    root = reconstruct_node_recursive(root_payload)
 
-    # Establecer raíz en árboles
+    # Establecer raíz en AVL
     avl.root = root
-    bst.root = root
 
     # Calcular alturas correctas en todo el árbol
     def calculate_all_heights(node):
@@ -100,6 +106,17 @@ def load_from_topology(json_data: dict) -> tuple:
         update_height(node)
 
     calculate_all_heights(root)
+
+    def insert_bst_inorder(node):
+        if node is None:
+            return
+        insert_bst_inorder(node.getLeftChild())
+        node_data = node.getDatos() if hasattr(node, "getDatos") else None
+        node_payload = node_data.copy() if node_data else None
+        bst.insert(Node(node.getValue(), datos=node_payload))
+        insert_bst_inorder(node.getRightChild())
+
+    insert_bst_inorder(root)
 
     return avl, bst
 
@@ -115,10 +132,14 @@ def load_from_insertion(json_data: dict) -> tuple:
     Returns:
         tuple: (avl, bst) populated trees
     """
-    if "flights" not in json_data:
-        raise ValueError("Modo insertion requiere un campo 'flights'")
+    flights = None
+    if "flights" in json_data:
+        flights = json_data["flights"]
+    elif "vuelos" in json_data:
+        flights = json_data["vuelos"]
 
-    flights = json_data["flights"]
+    if flights is None:
+        raise ValueError("Modo insertion requiere un campo 'flights' o 'vuelos'")
     if not isinstance(flights, list):
         raise ValueError("El campo 'flights' debe ser una lista")
 
@@ -133,7 +154,13 @@ def load_from_insertion(json_data: dict) -> tuple:
         if not validate_flight_data(flight_data):
             continue  # Saltar vuelos inválidos
 
-        value = flight_data.get("codigo")
+        codigo = flight_data.get("codigo")
+        value = codigo
+        if isinstance(codigo, str) and codigo.upper().startswith("SB"):
+            try:
+                value = int(codigo[2:])
+            except ValueError:
+                raise ValueError(f"Codigo inválido: {codigo}")
 
         # Crear nodo con datos completos
         node_avl = Node(value, datos=flight_data.copy())
@@ -169,17 +196,26 @@ def load_trees_from_json(json_content: str) -> tuple:
         raise ValueError("El JSON debe ser un objeto (diccionario)")
 
     load_type = json_data.get("type")
+    load_tipo = json_data.get("tipo")
+
+    if load_tipo in ("INSERCION", "insertion"):
+        avl, bst = load_from_insertion(json_data)
+        return avl, bst, "insertion"
+
+    if load_type == "insertion":
+        avl, bst = load_from_insertion(json_data)
+        return avl, bst, "insertion"
+
+    if "vuelos" in json_data or "flights" in json_data:
+        avl, bst = load_from_insertion(json_data)
+        return avl, bst, "insertion"
 
     if load_type == "topology":
         avl, bst = load_from_topology(json_data)
         return avl, bst, "topology"
 
-    elif load_type == "insertion":
-        avl, bst = load_from_insertion(json_data)
-        return avl, bst, "insertion"
-
-    else:
-        raise ValueError(f"Tipo de carga no soportado: {load_type}. Usar 'topology' o 'insertion'")
+    avl, bst = load_from_topology(json_data)
+    return avl, bst, "topology"
 
 
 def export_tree_to_json(tree) -> dict:

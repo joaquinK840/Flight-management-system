@@ -92,7 +92,10 @@ def delete_flight(codigo: int):
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error eliminando vuelo: {str(e)}")
+        message = str(e)
+        if "No se encontró" in message or "no encontrado" in message:
+            raise HTTPException(status_code=404, detail=message)
+        raise HTTPException(status_code=500, detail=f"Error eliminando vuelo: {message}")
 
 
 @router.delete("/cancel/{codigo}")

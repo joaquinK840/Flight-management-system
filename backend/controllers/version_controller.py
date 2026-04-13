@@ -50,19 +50,16 @@ class VersionController:
         Returns:
             Dict con estado, cantidad total, y lista de versiones
         """
-        versions = self.version_service.get_version_list()
-
-        # Obtener información detallada de cada versión
         versions_info = []
-        for version_name in versions:
-            info = self.version_service.get_version_info(version_name)
-            versions_info.append(info)
+        for name, data in self.version_service.versions.items():
+            versions_info.append({
+                "name": name,
+                "created_at": data.get("timestamp", ""),
+                "total_nodes": data.get("metrics", {}).get("total_nodes", 0),
+                "height": data.get("metrics", {}).get("height", 0)
+            })
 
-        return {
-            "status": "success",
-            "total_versions": len(versions_info),
-            "versions": versions_info
-        }
+        return {"versions": versions_info, "count": len(versions_info)}
 
     def restore_version(self, tree, version_name: str, queue=None) -> dict:
         """

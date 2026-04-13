@@ -43,10 +43,25 @@ const TreeViewer = ({ tree, title = 'Estructura del Árbol AVL' }) => {
   }, [tree])
 
   if (!tree || !treeData) {
+    const isBst = title.includes('BST')
     return (
       <div style={styles.container}>
         <h3 style={styles.title}>{title}</h3>
-        <p style={styles.empty}>Árbol vacío - Inserta valores para comenzar</p>
+        {isBst && <div style={styles.bstBadge}>Sin balanceo</div>}
+        <div style={styles.emptyPanel}>
+          <div style={styles.emptyTitle}>Árbol vacío</div>
+          <div style={styles.emptyText}>
+            Para comenzar, carga uno de los archivos JSON del profesor usando el panel superior, o inserta vuelos manualmente con el formulario de inserción.
+          </div>
+          <div style={styles.emptyActions}>
+            <button type="button" style={{ ...styles.emptyButton, ...styles.emptyButtonTopology }}>
+              📂 Modo Topología
+            </button>
+            <button type="button" style={{ ...styles.emptyButton, ...styles.emptyButtonInsertion }}>
+              📋 Modo Inserción
+            </button>
+          </div>
+        </div>
       </div>
     )
   }
@@ -125,9 +140,12 @@ const TreeViewer = ({ tree, title = 'Estructura del Árbol AVL' }) => {
     )
   }
 
+  const isBst = title.includes('BST')
+
   return (
     <div style={styles.container}>
       <h3 style={styles.title}>{title}</h3>
+      {isBst && <div style={styles.bstBadge}>Sin balanceo</div>}
       {isTruncated && (
         <div style={styles.truncatedWarning}>
           📊 Árbol con {totalNodes} nodos (mostrando hasta {maxDepth} niveles)
@@ -170,10 +188,59 @@ const styles = {
     fontWeight: '600',
     color: '#212121'
   },
+  bstBadge: {
+    display: 'inline-block',
+    padding: '4px 10px',
+    backgroundColor: '#f59e0b',
+    color: '#fff7ed',
+    borderRadius: '999px',
+    fontSize: '11px',
+    fontWeight: '700',
+    marginBottom: '12px'
+  },
   empty: {
     color: '#999',
     textAlign: 'center',
     padding: '40px'
+  },
+  emptyPanel: {
+    padding: '20px',
+    backgroundColor: '#fff',
+    borderRadius: '12px',
+    border: '1px dashed #cbd5f5',
+    textAlign: 'center'
+  },
+  emptyTitle: {
+    fontSize: '18px',
+    fontWeight: '700',
+    color: '#1f2937',
+    marginBottom: '8px'
+  },
+  emptyText: {
+    fontSize: '13px',
+    color: '#4b5563',
+    marginBottom: '16px'
+  },
+  emptyActions: {
+    display: 'flex',
+    justifyContent: 'center',
+    gap: '12px',
+    flexWrap: 'wrap'
+  },
+  emptyButton: {
+    border: 'none',
+    padding: '8px 14px',
+    borderRadius: '999px',
+    fontWeight: '700',
+    cursor: 'default'
+  },
+  emptyButtonTopology: {
+    backgroundColor: '#1d4ed8',
+    color: '#eff6ff'
+  },
+  emptyButtonInsertion: {
+    backgroundColor: '#10b981',
+    color: '#ecfdf5'
   },
   truncatedWarning: {
     padding: '12px',
