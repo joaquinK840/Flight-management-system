@@ -1,6 +1,7 @@
 """
-Tests básicos para endpoints de vuelos.
-Ejecutar con: pytest test_flight_endpoints.py -v
+Basic tests for flight endpoints.
+
+Run with: pytest test_flight_endpoints.py -v
 """
 
 import pytest
@@ -12,10 +13,10 @@ client = TestClient(app)
 
 
 class TestFlightInsert:
-    """Tests para inserción de vuelos"""
+    """Tests for flight insertion"""
 
     def test_insert_valid_flight(self):
-        """Debe insertar un vuelo válido"""
+        """Should insert a valid flight"""
         flight = {
             "codigo": 100,
             "origen": "Madrid",
@@ -33,7 +34,7 @@ class TestFlightInsert:
         assert "tree" in response.json()
 
     def test_insert_missing_codigo(self):
-        """Debe fallar si falta 'codigo'"""
+        """Should fail if 'codigo' is missing"""
         flight = {
             "origen": "Madrid",
             "destino": "Barcelona",
@@ -46,7 +47,7 @@ class TestFlightInsert:
         assert response.status_code == 400
 
     def test_insert_multiple_flights(self):
-        """Debe insertar múltiples vuelos"""
+        """Should insert multiple flights"""
         # Reset first
         client.delete("/flights/reset")
 
@@ -62,10 +63,10 @@ class TestFlightInsert:
 
 
 class TestFlightDelete:
-    """Tests para eliminación de vuelos"""
+    """Tests for flight deletion"""
 
     def setup_method(self):
-        """Setup antes de cada test"""
+        """Setup before each test"""
         client.delete("/flights/reset")
         
         # Insertar vuelos de prueba
@@ -78,22 +79,22 @@ class TestFlightDelete:
             client.post("/flights/insert", json=flight)
 
     def test_delete_existing_flight(self):
-        """Debe eliminar un vuelo existente"""
+        """Should delete an existing flight"""
         response = client.delete("/flights/delete/100")
         assert response.status_code == 200
         assert response.json()["status"] == "success"
 
     def test_delete_nonexistent_flight(self):
-        """Debe fallar al eliminar vuelo inexistente"""
+        """Should fail when deleting nonexistent flight"""
         response = client.delete("/flights/delete/999)
         assert response.status_code == 404
 
 
 class TestFlightUpdate:
-    """Tests para actualización de vuelos"""
+    """Tests for flight update"""
 
     def setup_method(self):
-        """Setup antes de cada test"""
+        """Setup before each test"""
         client.delete("/flights/reset")
         
         flight = {

@@ -1,79 +1,81 @@
 """
-Queue (Cola) - Estructura FIFO.
-First In, First Out: el primer elemento agregado es el primero en ser extraido.
+Queue data structure (FIFO - First In First Out).
+
+This module implements a FIFO queue used for managing pending flights
+in concurrent processing scenarios.
 """
 
-
 class Queue:
-    """Cola FIFO simple."""
+    """Simple FIFO queue data structure."""
 
     def __init__(self):
+        """Initialize an empty queue."""
         self.items = []
 
     def enqueue(self, item):
         """
-        Agregar un elemento a la cola (al final).
+        Add an element to the end of the queue.
 
         Args:
-            item: Elemento a agregar
+            item: Element to add (typically flight data dict)
         """
         self.items.append(item)
 
     def dequeue(self):
         """
-        Extraer el primer elemento de la cola.
+        Remove and return the first element from the queue.
 
         Returns:
-            El elemento al frente de la cola
+            The front element
 
         Raises:
-            IndexError: Si la cola esta vacia
+            IndexError: If the queue is empty
         """
         if len(self.items) == 0:
-            raise IndexError("Cola vacia")
+            raise IndexError("Queue is empty")
         return self.items.pop(0)
 
     def peek(self):
         """
-        Ver el primer elemento sin extraerlo.
+        View the first element without removing it.
 
         Returns:
-            El elemento al frente de la cola
+            The front element
 
         Raises:
-            IndexError: Si la cola esta vacia
+            IndexError: If the queue is empty
         """
         if len(self.items) == 0:
-            raise IndexError("Cola vacia")
+            raise IndexError("Queue is empty")
         return self.items[0]
 
     def is_empty(self):
         """
-        Verificar si la cola esta vacia.
+        Check if the queue is empty.
 
         Returns:
-            bool: True si esta vacia
+            bool: True if empty, False otherwise
         """
         return len(self.items) == 0
 
     def size(self):
         """
-        Obtener el tamano de la cola.
+        Get the number of elements in the queue.
 
         Returns:
-            int: Cantidad de elementos en la cola
+            int: Number of elements
         """
         return len(self.items)
 
     def clear(self):
-        """Vaciar la cola."""
+        """Clear all elements from the queue."""
         self.items = []
 
     def get_all(self):
         """
-        Obtener todos los elementos sin modificar la cola.
+        Get a copy of all elements without modifying the queue.
 
         Returns:
-            list: Copia de los elementos en la cola
+            list: Copy of all elements in the queue
         """
         return self.items.copy()

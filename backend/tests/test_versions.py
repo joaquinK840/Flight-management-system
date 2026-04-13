@@ -1,10 +1,12 @@
 """
-Tests para el sistema de versionado.
-Ejecutar con: pytest test_versions.py -v
+Tests for the versioning system.
+
+Run with: pytest test_versions.py -v
 """
 
-import pytest
 import json
+
+import pytest
 from fastapi.testclient import TestClient
 from main import app
 
@@ -12,10 +14,10 @@ client = TestClient(app)
 
 
 class TestVersionSave:
-    """Tests para guardar versiones"""
+    """Tests for saving versions"""
 
     def setup_method(self):
-        """Limpiar antes de cada test"""
+        """Clean up before each test"""
         # Reset
         client.delete("/flights/reset")
         client.delete("/versions/clear/all")
@@ -30,29 +32,29 @@ class TestVersionSave:
             client.post("/flights/insert", json=flight)
 
     def test_save_version(self):
-        """Debe guardar una versión"""
+        """Should save a version"""
         response = client.post("/versions/save", json={"name": "Test Version"})
         assert response.status_code == 200
         assert response.json()["status"] == "success"
         assert "Test Version" in response.json()["available_versions"]
 
     def test_save_duplicate_name(self):
-        """Debe rechazar nombre duplicado"""
+        """Should reject duplicate name"""
         client.post("/versions/save", json={"name": "Version 1"})
         response = client.post("/versions/save", json={"name": "Version 1"})
         assert response.status_code == 400
 
     def test_save_empty_name(self):
-        """Debe rechazar nombre vacío"""
+        """Should reject empty name"""
         response = client.post("/versions/save", json={"name": ""})
         assert response.status_code == 400
 
 
 class TestVersionList:
-    """Tests para listar versiones"""
+    """Tests for listing versions"""
 
     def setup_method(self):
-        """Preparar datos"""
+        """Prepare data"""
         client.delete("/flights/reset")
         client.delete("/versions/clear/all")
         
@@ -63,14 +65,14 @@ class TestVersionList:
             client.post("/versions/save", json={"name": f"Version {i+1}"})
 
     def test_list_versions(self):
-        """Debe listar todas las versiones"""
+        """Should list all versions"""
         response = client.get("/versions/list")
         assert response.status_code == 200
         assert response.json()["total_versions"] == 3
         assert len(response.json()["versions"]) == 3
 
     def test_list_versions_contains_info(self):
-        """Debe incluir información de cada versión"""
+        """Should include information for each version"""
         response = client.get("/versions/list")
         versions = response.json()["versions"]
         for version in versions:
@@ -80,10 +82,10 @@ class TestVersionList:
 
 
 class TestVersionRestore:
-    """Tests para restaurar versiones"""
+    """Tests for restoring versions"""
 
     def setup_method(self):
-        """Preparar datos"""
+        """Prepare data"""
         client.delete("/flights/reset")
         client.delete("/versions/clear/all")
         

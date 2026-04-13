@@ -1,13 +1,21 @@
+"""
+Version management API routes.
+
+Provides REST endpoints for saving, restoring, and managing
+tree and queue versions.
+"""
+
+import json
+from typing import Optional
+
+from controllers.version_controller import VersionController
+from core.shared_instances import avl, flight_queue  # Use shared instances
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import Optional
-import json
-from controllers.version_controller import VersionController
-from core.shared_instances import avl, flight_queue  # Usar instancias compartidas
 
 router = APIRouter(prefix="/versions", tags=["Versions"])
 
-# Instancia global del controlador de versiones
+# Global instance of version controller
 version_controller = VersionController()
 
 
@@ -29,14 +37,15 @@ class VersionRestoreRequest(BaseModel):
 @router.post("/save")
 def save_version(request: VersionSaveRequest):
     """
-    Guarda el estado actual del árbol Y COLA como una nueva versión.
-    Serializa la estructura jerárquica completa del árbol.
-    
+    Save the current state of the tree AND QUEUE as a new version.
+
+    Serializes the complete hierarchical structure of the tree.
+
     Args:
-        request: { "name": "Nombre de la versión" }
-        
+        request: { "name": "Version name" }
+
     Returns:
-        Confirmación, timestamp, y lista de versiones disponibles
+        Confirmation, timestamp, and list of available versions
     """
     try:
         result = version_controller.save_version(avl, request.name, flight_queue)
@@ -51,10 +60,10 @@ def save_version(request: VersionSaveRequest):
 @router.get("/list")
 def list_versions():
     """
-    Retorna lista de todas las versiones guardadas.
-    
+    Return list of all saved versions.
+
     Returns:
-        Lista de nombres de versiones con información
+        List of version names with information
     """
     try:
         result = version_controller.list_versions()
@@ -67,14 +76,15 @@ def list_versions():
 @router.post("/restore/{name}")
 def restore_version(name: str):
     """
-    Restaura el árbol Y COLA desde una versión guardada.
-    Reconstruye exactamente la topología original con las mismas alturas.
-    
+    Restore the tree AND QUEUE from a saved version.
+
+    Reconstructs exactly the original topology with the same heights.
+
     Args:
-        name: Nombre de la versión a restaurar
-        
+        name: Name of the version to restore
+
     Returns:
-        Árbol serializado restaurado con métricas y estado de cola
+        Restored serialized tree with metrics and queue status
     """
     try:
         result = version_controller.restore_version(avl, name, flight_queue)
@@ -89,13 +99,13 @@ def restore_version(name: str):
 @router.delete("/{name}")
 def delete_version(name: str):
     """
-    Elimina una versión guardada.
-    
+    Delete a saved version.
+
     Args:
-        name: Nombre de la versión a eliminar
-        
+        name: Name of the version to delete
+
     Returns:
-        Confirmación y lista de versiones restantes
+        Confirmation and list of remaining versions
     """
     try:
         result = version_controller.delete_version(name)
@@ -110,13 +120,13 @@ def delete_version(name: str):
 @router.get("/{name}/info")
 def get_version_info(name: str):
     """
-    Obtiene información detallada de una versión específica.
-    
+    Get detailed information about a specific version.
+
     Args:
-        name: Nombre de la versión
-        
+        name: Version name
+
     Returns:
-        Información: timestamp, métricas, tipo de árbol
+        Information: timestamp, metrics, tree type
     """
     try:
         info = version_controller.version_service.get_version_info(name)
@@ -134,13 +144,13 @@ def get_version_info(name: str):
 @router.post("/{name}/overwrite")
 def overwrite_version(name: str):
     """
-    Sobrescribe una versión existente con el estado actual del árbol.
-    
+    Overwrite an existing version with the current tree state.
+
     Args:
-        name: Nombre de la versión a sobrescribir
-        
+        name: Name of the version to overwrite
+
     Returns:
-        Confirmación y nuevo timestamp
+        Confirmation and new timestamp
     """
     try:
         result = version_controller.version_service.overwrite_version(avl, name)
@@ -155,14 +165,14 @@ def overwrite_version(name: str):
 @router.post("/compare/{version1}/vs/{version2}")
 def compare_versions(version1: str, version2: str):
     """
-    Compara dos versiones y retorna sus diferencias.
-    
+    Compare two versions and return their differences.
+
     Args:
-        version1: Primera versión
-        version2: Segunda versión
-        
+        version1: First version
+        version2: Second version
+
     Returns:
-        Comparación de métricas (altura, nodos, hojas, rotaciones)
+        Comparison of metrics (height, nodes, leaves, rotations)
     """
     try:
         result = version_controller.version_service.compare_versions(version1, version2)
@@ -180,11 +190,12 @@ def compare_versions(version1: str, version2: str):
 @router.delete("/clear/all")
 def clear_all_versions():
     """
-    Elimina TODAS las versiones guardadas.
-    ⚠️ OPERACIÓN IRREVERSIBLE
-    
+    Delete ALL saved versions.
+
+    ⚠️ IRREVERSIBLE OPERATION
+
     Returns:
-        Confirmación de eliminación
+        Deletion confirmation
     """
     try:
         result = version_controller.version_service.clear_all_versions()

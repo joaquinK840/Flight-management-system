@@ -1,24 +1,26 @@
 """
-Servicio de Cola para simulación de concurrencia.
-Maneja operaciones FIFO de vuelos pendientes a procesar.
+Queue service for concurrency simulation.
+
+Handles FIFO operations of pending flights to be processed.
 """
 
-from core.structures.queue.queue import Queue
-from core.structures.node.node import Node
+from core.shared_instances import flight_queue  # Use shared instance
 from core.structures.avl_tree.balance import get_balance_factor
-from core.shared_instances import flight_queue  # Usar instancia compartida
+from core.structures.node.node import Node
+from core.structures.queue.queue import Queue
 from services.serialize_tree import serialize_tree
 
 
 def add_flight_to_queue(flight_data: dict) -> dict:
     """
-    Agregar un vuelo a la cola sin procesarlo aún.
-    
+    Add a flight to the queue without processing it yet.
+
     Args:
-        flight_data: {codigo, origen, destino, horaSalida, precioBase, pasajeros, prioridad}
-        
+        flight_data (dict): Dictionary containing flight information
+            {codigo, origen, destino, horaSalida, precioBase, pasajeros, prioridad}
+
     Returns:
-        dict: {status, message, queue_size, pending_flights}
+        dict: Dictionary with status, message, queue_size, and pending_flights
     """
     flight_queue.enqueue(flight_data)
     
@@ -32,10 +34,10 @@ def add_flight_to_queue(flight_data: dict) -> dict:
 
 def get_pending_flights() -> dict:
     """
-    Obtener la lista de vuelos pendientes en la cola.
-    
+    Get the list of pending flights in the queue.
+
     Returns:
-        dict: {status, pending_count, flights}
+        dict: Dictionary with status, pending_count, and flights list
     """
     pending = flight_queue.get_all()
     
@@ -48,21 +50,21 @@ def get_pending_flights() -> dict:
 
 def process_one_flight(tree) -> dict:
     """
-    Extraer el primer vuelo de la cola e insertarlo en el árbol.
-    Detecta conflictos si el balance factor > 2.
-    
+    Extract the first flight from the queue and insert it into the tree.
+
+    Detects conflicts if the balance factor > 2.
+
     Args:
-        tree: Instancia del árbol AVL
-        
+        tree: AVL tree instance
+
     Returns:
-        dict: {
-            status: str,
-            flight_inserted: flight_data | null,
-            tree_after: serialized tree,
-            conflict: bool,
-            conflict_detail: str | null,
-            queue_remaining: int
-        }
+        dict: Dictionary containing:
+            - status: Operation status
+            - flight_inserted: Inserted flight data or null
+            - tree_after: Serialized tree after insertion
+            - conflict: Boolean indicating if conflict was detected
+            - conflict_detail: Conflict description or null
+            - queue_remaining: Number of flights remaining in queue
     """
     if flight_queue.is_empty():
         return {
@@ -123,19 +125,18 @@ def process_one_flight(tree) -> dict:
 
 def process_all_flights(tree) -> dict:
     """
-    Procesar todos los vuelos de la cola uno por uno.
-    
+    Process all flights from the queue one by one.
+
     Args:
-        tree: Instancia del árbol AVL
-        
+        tree: AVL tree instance
+
     Returns:
-        dict: {
-            status,
-            total_processed: int,
-            results: [list of process results],
-            tree_final: serialized tree,
-            total_conflicts: int
-        }
+        dict: Dictionary containing:
+            - status: Operation status
+            - total_processed: Number of flights processed
+            - results: List of individual process results
+            - tree_final: Final serialized tree
+            - total_conflicts: Total number of conflicts detected
     """
     results = []
     total_conflicts = 0
@@ -175,10 +176,10 @@ def process_all_flights(tree) -> dict:
 
 def clear_queue() -> dict:
     """
-    Vaciar la cola sin procesar nada.
-    
+    Clear the queue without processing anything.
+
     Returns:
-        dict: {status, message, cleared_count}
+        dict: Dictionary with status, message, and cleared_count
     """
     count = flight_queue.size()
     flight_queue.clear()
@@ -191,7 +192,15 @@ def clear_queue() -> dict:
 
 
 def _serialize_tree_simple(node):
-    """Serializar árbol de forma simple."""
+    """
+    Serialize tree in a simple format.
+
+    Args:
+        node: Root node of the tree to serialize
+
+    Returns:
+        dict or None: Serialized tree structure or None if node is None
+    """
     if node is None:
         return None
     

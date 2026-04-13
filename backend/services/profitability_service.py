@@ -1,39 +1,40 @@
 """
-Servicio de Rentabilidad - Calcula y analiza la rentabilidad de vuelos.
-Single Responsibility: Solo maneja cálculos de rentabilidad.
+Profitability service - Calculates and analyzes flight profitability.
+
+Single Responsibility: Only handles profitability calculations.
 """
 
 
 def calculate_rentability(node_datos: dict, penalty_active: bool = False) -> float:
     """
-    Calcula la rentabilidad de un vuelo basado en sus datos.
-    
-    Fórmula:
-        rentabilidad = (pasajeros × precioFinal) - descuento_promocion
-    
-    Donde:
-        descuento_promocion = 0.1 × precioFinal si hay promoción, else 0
-        penalty = ya incluido en precioFinal (no se suma aquí)
-    
+    Calculate the profitability of a flight based on its data.
+
+    Formula:
+        profitability = (passengers × final_price) - promotion_discount
+
+    Where:
+        promotion_discount = 0.1 × final_price if promotion exists, else 0
+        penalty = already included in final_price (not added here)
+
     Args:
-        node_datos: Dict con datos del vuelo
-                    {
-                        "codigo": int,
-                        "origen": str,
-                        "destino": str,
-                        "precioBase": float,
-                        "precioFinal": float,
-                        "pasajeros": int,
-                        "promocion": bool,
-                        ...
-                    }
-        penalty_active: No se usa en este cálculo (penalty ya está en precioFinal)
-        
+        node_datos (dict): Dictionary with flight data
+            {
+                "codigo": int,
+                "origen": str,
+                "destino": str,
+                "precioBase": float,
+                "precioFinal": float,
+                "pasajeros": int,
+                "promocion": bool,
+                ...
+            }
+        penalty_active (bool, optional): Not used in this calculation (penalty already in final_price)
+
     Returns:
-        float: Rentabilidad calculada
-        
+        float: Calculated profitability
+
     Raises:
-        KeyError: Si faltan campos requeridos en node_datos
+        KeyError: If required fields are missing in node_datos
     """
     if not node_datos:
         return 0.0
@@ -63,22 +64,22 @@ def calculate_rentability(node_datos: dict, penalty_active: bool = False) -> flo
 
 def find_least_profitable(tree) -> tuple:
     """
-    Encuentra el nodo de MENOR rentabilidad en el árbol.
-    
-    Criterios de desempate (en orden):
-    1. Menor rentabilidad
-    2. Mayor profundidad (más lejano de la raíz)
-    3. Mayor código (value)
-    
+    Find the node with LEAST profitability in the tree.
+
+    Tie-breaking criteria (in order):
+    1. Lower profitability
+    2. Greater depth (farthest from root)
+    3. Higher code (value)
+
     Args:
-        tree: Instancia de árbol AVL/BST
-        
+        tree: AVL/BST tree instance
+
     Returns:
-        Tupla: (node, rentabilidad, codigo, profundidad)
-               Si árbol vacío: (None, None, None, None)
-    
+        tuple: (node, profitability, code, depth)
+               If tree is empty: (None, None, None, None)
+
     Raises:
-        ValueError: Si el árbol está vacío
+        ValueError: If the tree is empty
     """
     root = tree.getRoot() if hasattr(tree, 'getRoot') else None
     
@@ -95,7 +96,12 @@ def find_least_profitable(tree) -> tuple:
     
     def traverse(node, depth=0):
         """
-        Recorre el árbol en profundidad para encontrar el nodo de menor rentabilidad.
+        Traverse the tree in depth to find the node with least profitability.
+
+        Args:
+            node: Current node being evaluated
+            depth (int, optional): Current depth in the tree. Defaults to 0.
+        
         
         Args:
             node: Nodo actual

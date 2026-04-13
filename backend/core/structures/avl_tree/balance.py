@@ -1,12 +1,19 @@
+"""
+AVL tree balance factor calculations and rebalancing operations.
+
+This module provides functions to calculate balance factors, determine rotation cases,
+and perform rebalancing operations to maintain AVL tree properties.
+"""
+
 from .rotations import rotate_left, rotate_right
 
 
 def get_height(node):
     """
-    Get node height in O(1).
+    Get the height of a node in O(1).
 
     Args:
-        node: Tree node
+        node (Node): Tree node
 
     Returns:
         int: Node height (0 if None)
@@ -18,15 +25,16 @@ def get_height(node):
 
 def update_height(node):
     """
-    Update node height from its children in O(1).
-    Call after any structural change.
+    Update node height based on its children's heights in O(1).
+
+    Should be called after any structural change to the tree.
 
     Args:
-        node: Node to update
+        node (Node): Node to update
     """
     if node is None:
         return
-    
+
     left_height = get_height(node.getLeftChild())
     right_height = get_height(node.getRightChild())
     node.setHeight(1 + max(left_height, right_height))
@@ -34,18 +42,19 @@ def update_height(node):
 
 def get_balance_factor(node):
     """
-    Compute balance factor in O(1).
-    Positive means left heavy, negative means right heavy.
+    Compute the balance factor of a node in O(1).
+
+    Positive values indicate left-heavy, negative indicate right-heavy.
 
     Args:
-        node: Node to evaluate
+        node (Node): Node to evaluate
 
     Returns:
-        int: Balance factor (h_left - h_right)
+        int: Balance factor (left_height - right_height)
     """
     if node is None:
         return 0
-    
+
     left_height = get_height(node.getLeftChild())
     right_height = get_height(node.getRightChild())
     return left_height - right_height
@@ -53,14 +62,14 @@ def get_balance_factor(node):
 
 def get_balance_case(node, bf):
     """
-    Determine imbalance case (LL, RR, LR, RL).
+    Determine the type of imbalance that requires rotation.
 
     Args:
-        node: Imbalanced node
-        bf: Balance factor for the node
+        node (Node): Imbalanced node
+        bf (int): Balance factor of the node
 
     Returns:
-        str: Rotation case
+        str or None: "LL", "RR", "LR", "RL" or None if balanced
     """
     if bf > 1:
         if get_balance_factor(node.getLeftChild()) >= 0:
@@ -73,80 +82,83 @@ def get_balance_case(node, bf):
             return "RR"
         else:
             return "RL"
-    
+
     return None
 
 
 def check_balance(tree, node):
     """
-    Check and restore AVL balance from a node up to the root.
+    Check and restore AVL balance from the given node up to the root.
 
-    The four rotation cases are:
-    - LL: left-left heavy, rotate right.
-    - RR: right-right heavy, rotate left.
-    - LR: left-right heavy, rotate left on child then right on node.
-    - RL: right-left heavy, rotate right on child then left on node.
+    Handles four rotation cases:
+    - LL: Left-left heavy, single right rotation
+    - RR: Right-right heavy, single left rotation
+    - LR: Left-right heavy, left rotation on child then right on node
+    - RL: Right-left heavy, right rotation on child then left on node
 
-    When tree.stress_mode is True, only heights are updated (no rotations).
+    When tree.stress_mode is True, only updates heights without rotations.
+
+    Args:
+        tree (AVL): The AVL tree instance
+        node (Node): Starting node for balance check (travels up to root)
     """
-    
     while node is not None:
-        # Actualizar altura del nodo actual
+        # Update current node height
         update_height(node)
-        
-        # Calcular factor de balance
+
+        # Calculate balance factor
         bf = get_balance_factor(node)
-        
-        # Si stress_mode está activo, solo actualizar altura y subir
+
+        # In stress mode, only update heights and continue up
         if tree.stress_mode:
             node = node.getParent()
             continue
-        
+
         # LEFT HEAVY (bf > 1)
         if bf > 1:
             left_bf = get_balance_factor(node.getLeftChild())
-            
+
             if left_bf >= 0:
-                # LL case: rotación simple a la derecha
+                # LL case: single right rotation
                 tree.rotation_counts["LL"] += 1
                 rotate_right(tree, node)
-                # Actualizar alturas después de rotación
+                # Update heights after rotation
                 update_height(node)
                 update_height(node.getParent())
             else:
-                # LR case: rotación izquierda-derecha
+                # LR case: left-right double rotation
                 tree.rotation_counts["LR"] += 1
                 rotate_left(tree, node.getLeftChild())
-                # Actualizar alturas del subtree izquierdo después de rotación
+                # Update heights of left subtree after rotation
                 update_height(node.getLeftChild())
                 update_height(node)
                 rotate_right(tree, node)
-                # Actualizar alturas después de rotación derecha
+                # Update heights after right rotation
                 update_height(node)
                 update_height(node.getParent())
-        
+
         # RIGHT HEAVY (bf < -1)
         elif bf < -1:
             right_bf = get_balance_factor(node.getRightChild())
-            
+
             if right_bf <= 0:
-                # RR case: rotación simple a la izquierda
+                # RR case: single left rotation
                 tree.rotation_counts["RR"] += 1
                 rotate_left(tree, node)
-                # Actualizar alturas después de rotación
+                # Update heights after rotation
                 update_height(node)
                 update_height(node.getParent())
             else:
-                # RL case: rotación derecha-izquierda
+                # RL case: right-left double rotation
                 tree.rotation_counts["RL"] += 1
                 rotate_right(tree, node.getRightChild())
-                # Actualizar alturas del subtree derecho después de rotación
+                # Update heights of right subtree after rotation
                 update_height(node.getRightChild())
                 update_height(node)
                 rotate_left(tree, node)
-                # Actualizar alturas después de rotación izquierda
+                # Update heights after left rotation
                 update_height(node)
                 update_height(node.getParent())
-        
-        # Subir hacia la raíz
+
+        # Move up towards root
         node = node.getParent()

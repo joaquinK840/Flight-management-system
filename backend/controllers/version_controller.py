@@ -1,7 +1,8 @@
 """
-Version Controller - Controlador de Versionado
-Orquesta las operaciones de versionado del árbol.
-Arquitectura: Controller → Service → Data
+Version controller for tree versioning operations.
+
+This module orchestrates tree versioning operations including save, restore,
+delete, and duplicate functionality.
 """
 
 from services.version_service import VersionService
@@ -9,46 +10,47 @@ from services.version_service import VersionService
 
 class VersionController:
     """
-    Controlador de versionado.
-    Orquesta la lógica de guardado, restauración y eliminación de versiones.
+    Controller for tree versioning operations.
+
+    Orchestrates the logic for saving, restoring, and managing tree versions.
     """
 
     def __init__(self):
-        """Inicializa el controlador con el servicio de versiones."""
+        """Initialize the controller with the version service."""
         self.version_service = VersionService()
 
     def save_version(self, tree, version_name: str, queue=None) -> dict:
         """
-        Guarda el estado actual del árbol Y COLA como una nueva versión.
+        Save the current tree AND queue state as a new version.
 
         Args:
-            tree: Árbol AVL/BST a guardar
-            version_name: Nombre de la versión
-            queue: Cola FIFO opcional a guardar
+            tree: AVL/BST tree to save
+            version_name (str): Name for the version
+            queue: Optional FIFO queue to save
 
         Returns:
-            Dict con confirmación, timestamp, y lista de versiones
+            dict: Confirmation with timestamp and version list
 
         Raises:
-            ValueError: Si el nombre está vacío o ya existe
+            ValueError: If name is empty or already exists
         """
-        # Validación
+        # Validation
         if not version_name or not version_name.strip():
-            raise ValueError("El nombre de la versión no puede estar vacío")
+            raise ValueError("Version name cannot be empty")
 
         if version_name in self.version_service.versions:
-            raise ValueError(f"La versión '{version_name}' ya existe")
+            raise ValueError(f"Version '{version_name}' already exists")
 
-        # Delegamos al servicio
+        # Delegate to service
         result = self.version_service.save_version(tree, version_name, queue)
         return result
 
     def list_versions(self) -> dict:
         """
-        Retorna lista de todas las versiones guardadas con información detallada.
+        Return list of all saved versions with detailed information.
 
         Returns:
-            Dict con estado, cantidad total, y lista de versiones
+            dict: Status, total count, and list of versions with metadata
         """
         versions_info = []
         for name, data in self.version_service.versions.items():
@@ -63,79 +65,79 @@ class VersionController:
 
     def restore_version(self, tree, version_name: str, queue=None) -> dict:
         """
-        Restaura el árbol Y COLA desde una versión guardada.
+        Restore tree AND queue from a saved version.
 
         Args:
-            tree: Árbol AVL/BST a restaurar
-            version_name: Nombre de la versión a restaurar
-            queue: Cola FIFO opcional a restaurar
+            tree: AVL/BST tree to restore
+            version_name (str): Name of version to restore
+            queue: Optional FIFO queue to restore
 
         Returns:
-            Dict con árbol serializado restaurado y métricas
+            dict: Restored serialized tree and metrics
 
         Raises:
-            ValueError: Si la versión no existe
+            ValueError: If version does not exist
         """
-        # Validación
+        # Validation
         if version_name not in self.version_service.versions:
-            raise ValueError(f"Versión '{version_name}' no encontrada")
+            raise ValueError(f"Version '{version_name}' not found")
 
-        # Delegamos al servicio
+        # Delegate to service
         result = self.version_service.restore_version(tree, version_name, queue)
         return result
 
     def delete_version(self, version_name: str) -> dict:
         """
-        Elimina una versión guardada.
+        Delete a saved version.
 
         Args:
-            version_name: Nombre de la versión a eliminar
+            version_name (str): Name of version to delete
 
         Returns:
-            Dict con confirmación de eliminación
+            dict: Deletion confirmation
 
         Raises:
-            ValueError: Si la versión no existe
+            ValueError: If version does not exist
         """
-        # Validación
+        # Validation
         if version_name not in self.version_service.versions:
-            raise ValueError(f"Versión '{version_name}' no encontrada")
+            raise ValueError(f"Version '{version_name}' not found")
 
-        # Delegamos al servicio
+        # Delegate to service
         del self.version_service.versions[version_name]
 
         return {
             "status": "success",
-            "message": f"Versión '{version_name}' eliminada",
+            "message": f"Version '{version_name}' deleted",
             "versions_count": len(self.version_service.versions),
             "available_versions": self.version_service.get_version_list()
         }
 
     def duplicate_version(self, source_name: str, dest_name: str) -> dict:
         """
-        Crea una copia de una versión existente con un nuevo nombre.
+        Create a copy of an existing version with a new name.
 
         Args:
-            source_name: Versión origen a copiar
-            dest_name: Nombre para la nueva copia
+            source_name (str): Source version to copy
+            dest_name (str): Name for the new copy
 
         Returns:
-            Dict con confirmación de duplicación
+            dict: Duplication confirmation
 
         Raises:
-            ValueError: Si la versión origen no existe o destino ya existe
+            ValueError: If source doesn't exist or destination already exists
         """
-        # Validación
+        # Validation
         if source_name not in self.version_service.versions:
-            raise ValueError(f"La versión '{source_name}' no existe")
+            raise ValueError(f"Version '{source_name}' does not exist")
 
         if dest_name in self.version_service.versions:
-            raise ValueError(f"La versión '{dest_name}' ya existe")
+            raise ValueError(f"Version '{dest_name}' already exists")
 
-        # Copiar versión
+        # Copy version
         source_version = self.version_service.versions[source_name]
         self.version_service.versions[dest_name] = {
-            "timestamp": f"{source_version['timestamp']} (copia)",
+            "timestamp": f"{source_version['timestamp']} (copy)",
             "tree_data": source_version["tree_data"],
             "metrics": source_version["metrics"].copy(),
             "tree_type": source_version.get("tree_type", "Unknown")
@@ -143,7 +145,7 @@ class VersionController:
 
         return {
             "status": "success",
-            "message": f"Versión '{source_name}' copiada como '{dest_name}'",
+            "message": f"Version '{source_name}' copied as '{dest_name}'",
             "versions_count": len(self.version_service.versions),
             "available_versions": self.version_service.get_version_list()
         }

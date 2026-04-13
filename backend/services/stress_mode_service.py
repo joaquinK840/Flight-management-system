@@ -1,33 +1,34 @@
 """
-Servicio para operaciones de Modo Estrés.
-- Rebalanceo en postorden
-- Auditoría de integridad del árbol
+Service for Stress Mode operations.
+
+- Post-order rebalancing
+- Tree integrity auditing
 """
 
-from core.structures.avl_tree.balance import (
-    get_height, update_height, get_balance_factor, get_balance_case
-)
+from core.structures.avl_tree.balance import (get_balance_case,
+                                              get_balance_factor, get_height,
+                                              update_height)
 from core.structures.avl_tree.rotations import rotate_left, rotate_right
 
 
 def rebalance_tree_postorder(tree):
     """
-    Rebalancea el árbol recorriendo en postorden.
-    - Visita hojas primero
-    - Para cada nodo desbalanceado, aplica rotación necesaria
-    - Registra rotaciones en tree.rotation_counts
-    
+    Rebalance the tree by traversing in post-order.
+
+    - Visits leaves first
+    - For each unbalanced node, applies necessary rotation
+    - Records rotations in tree.rotation_counts
+
     Args:
-        tree: Árbol AVL a rebalancear
-        
+        tree: AVL tree to rebalance
+
     Returns:
-        dict: {
-            'status': 'success',
-            'total_rotations': int,
-            'rotation_counts': {'LL': n, 'RR': n, 'LR': n, 'RL': n},
-            'nodes_rebalanced': int,
-            'imbalanced_before': [...]
-        }
+        dict: Dictionary containing:
+            - status: Operation status
+            - total_rotations: Total number of rotations performed
+            - rotation_counts: Dictionary with LL, RR, LR, RL rotation counts
+            - nodes_rebalanced: Number of nodes that were rebalanced
+            - imbalanced_before: List of imbalanced nodes before rebalancing
     """
     if tree.root is None:
         return {
@@ -77,15 +78,15 @@ def rebalance_tree_postorder(tree):
 
 def _rebalance_recursively(tree, node, imbalanced_list):
     """
-    Recorre en postorden (izquierda, derecha, nodo).
-    
+    Traverse in post-order (left, right, node).
+
     Args:
-        tree: Árbol AVL
-        node: Nodo actual
-        imbalanced_list: Lista para acumular nodos desbalanceados encontrados
-        
+        tree: AVL tree
+        node: Current node
+        imbalanced_list: List to accumulate imbalanced nodes found
+
     Returns:
-        int: Cantidad de nodos rebalanceados en este subárbol
+        int: Number of nodes rebalanced in this subtree
     """
     if node is None:
         return 0
@@ -170,28 +171,20 @@ def _rebalance_recursively(tree, node, imbalanced_list):
 
 def audit_tree(tree):
     """
-    Audita la integridad del árbol AVL.
-    Verifica:
-    - Factor de balance ∈ {-1, 0, 1} para todos los nodos
-    - Altura correcta según fórmula: 1 + max(left_h, right_h)
-    
+    Audit the integrity of the AVL tree.
+
+    Verifies:
+    - Balance factor ∈ {-1, 0, 1} for all nodes
+    - Correct height according to formula: 1 + max(left_h, right_h)
+
     Args:
-        tree: Árbol AVL
-        
+        tree: AVL tree to audit
+
     Returns:
-        dict: {
-            'valid': bool,
-            'nodes_checked': int,
-            'inconsistent_nodes': [
-                {
-                    'codigo': int,
-                    'balance_factor': int,
-                    'expected_balance': bool,
-                    'expected_height': int,
-                    'actual_height': int
-                }
-            ]
-        }
+        dict: Dictionary containing:
+            - valid: Boolean indicating if tree is valid
+            - nodes_checked: Number of nodes checked
+            - inconsistent_nodes: List of nodes with inconsistencies
     """
     if tree.root is None:
         return {
@@ -252,7 +245,15 @@ def audit_tree(tree):
 
 
 def _count_nodes(node):
-    """Contar nodos recursivamente."""
+    """
+    Count nodes recursively.
+
+    Args:
+        node: Root node of the subtree to count
+
+    Returns:
+        int: Number of nodes in the subtree
+    """
     if node is None:
         return 0
     return 1 + _count_nodes(node.getLeftChild()) + _count_nodes(node.getRightChild())

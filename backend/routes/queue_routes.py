@@ -1,22 +1,18 @@
 """
-Router de Cola para simulación de concurrencia.
-Endpoints para agregar vuelos a la cola, procesarlos por orden FIFO.
+Queue router for concurrency simulation.
+
+Endpoints to add flights to queue, process them in FIFO order.
 """
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from services.queue_service import (
-    add_flight_to_queue,
-    get_pending_flights,
-    process_one_flight,
-    process_all_flights,
-    clear_queue
-)
-
-# Importar instancia global del árbol AVL
+# Import global AVL tree instance
 from routes.avl_routes import avl
+from services.queue_service import (add_flight_to_queue, clear_queue,
+                                    get_pending_flights, process_all_flights,
+                                    process_one_flight)
 
-router = APIRouter(prefix="/queue", tags=["Queue - Concurrencia"])
+router = APIRouter(prefix="/queue", tags=["Queue - Concurrency"])
 
 
 # =====================================
@@ -24,7 +20,7 @@ router = APIRouter(prefix="/queue", tags=["Queue - Concurrencia"])
 # =====================================
 
 class FlightQueueRequest(BaseModel):
-    """Modelo para agregar vuelo a la cola."""
+    """Model for adding flight to queue."""
     codigo: int
     origen: str
     destino: str
@@ -44,8 +40,8 @@ class FlightQueueRequest(BaseModel):
 @router.post("/add")
 def add_flight(flight: FlightQueueRequest):
     """
-    Agregar un vuelo a la cola sin procesarlo.
-    
+    Add a flight to the queue without processing it.
+
     Body:
         {
             "codigo": 100,
@@ -56,11 +52,11 @@ def add_flight(flight: FlightQueueRequest):
             "pasajeros": 180,
             "prioridad": 1
         }
-    
+
     Returns:
         {
             "status": "success",
-            "message": "Vuelo 100 agregado a la cola",
+            "message": "Flight 100 added to queue",
             "queue_size": 3,
             "pending_flights": [...]
         }
@@ -73,8 +69,8 @@ def add_flight(flight: FlightQueueRequest):
 @router.get("/pending")
 def get_pending():
     """
-    Obtener la lista de vuelos pendientes en la cola.
-    
+    Get the list of pending flights in the queue.
+
     Returns:
         {
             "status": "success",
@@ -92,15 +88,16 @@ def get_pending():
 @router.post("/process-one")
 def process_one():
     """
-    Procesar el primer vuelo de la cola.
-    - Extraer de la cola
-    - Insertar en el árbol AVL
-    - Detectar conflictos (|balance_factor| > 2)
-    
+    Process the first flight from the queue.
+
+    - Extract from queue
+    - Insert into AVL tree
+    - Detect conflicts (|balance_factor| > 2)
+
     Returns:
         {
             "status": "success",
-            "message": "Vuelo 100 procesado exitosamente",
+            "message": "Flight 100 processed successfully",
             "flight_inserted": {...},
             "tree_after": {...},
             "conflict": false,
@@ -115,15 +112,16 @@ def process_one():
 @router.post("/process-all")
 def process_all():
     """
-    Procesar todos los vuelos de la cola.
-    - Extrae todos los vuelos en orden FIFO
-    - Inserta cada uno en el árbol
-    - Retorna resultados de cada inserción
-    
+    Process all flights from the queue.
+
+    - Extracts all flights in FIFO order
+    - Inserts each one into the tree
+    - Returns results of each insertion
+
     Returns:
         {
             "status": "success",
-            "message": "Procesados 5 vuelos de la cola",
+            "message": "Processed 5 flights from queue",
             "total_processed": 5,
             "results": [
                 {
@@ -146,12 +144,12 @@ def process_all():
 @router.delete("/clear")
 def clear():
     """
-    Vaciar la cola sin procesar nada.
-    
+    Clear the queue without processing anything.
+
     Returns:
         {
             "status": "success",
-            "message": "Cola vaciada. Se eliminaron 3 vuelos pendientes.",
+            "message": "Queue cleared. 3 pending flights removed.",
             "cleared_count": 3
         }
     """

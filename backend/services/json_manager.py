@@ -1,19 +1,29 @@
+"""
+JSON data management service for flight trees.
+
+Handles loading and validating flight data from JSON payloads,
+supporting both topology and insertion modes for AVL and BST trees.
+"""
+
 import json
-from core.structures.node.node import Node
-from core.structures.avl_tree.tree import AVL
+
 from core.structures.avl_tree.balance import update_height
+from core.structures.avl_tree.tree import AVL
 from core.structures.bst_tree.bst import BST
+from core.structures.node.node import Node
 
 
 def validate_flight_data(data: dict) -> bool:
     """
     Validate the minimum flight payload structure.
 
+    Checks for required fields in flight data dictionary.
+
     Args:
-        data: Flight data dict
+        data (dict): Flight data dictionary to validate
 
     Returns:
-        bool: True when valid
+        bool: True if data contains all required fields, False otherwise
     """
     required_fields = ["codigo"]
     for field in required_fields:
@@ -25,13 +35,14 @@ def validate_flight_data(data: dict) -> bool:
 def load_from_topology(json_data: dict) -> tuple:
     """
     Load a tree from JSON in Topology mode.
+
     Rebuilds the exact structure without balancing.
 
     Args:
-        json_data: Dict payload { "type": "topology", "root": {...} }
+        json_data (dict): Dictionary payload { "type": "topology", "root": {...} }
 
     Returns:
-        tuple: (avl, bst) reconstructed trees
+        tuple: (avl, bst) reconstructed AVL and BST trees
     """
     root_payload = json_data.get("root") if isinstance(json_data, dict) else None
     if root_payload is None:
@@ -44,7 +55,13 @@ def load_from_topology(json_data: dict) -> tuple:
 
     def reconstruct_node_recursive(node_data):
         """
-        Rebuild a node and its children from JSON.
+        Rebuild a node and its children from JSON data.
+
+        Args:
+            node_data (dict): Node data from JSON
+
+        Returns:
+            Node or None: Reconstructed node or None if node_data is None
         """
         if node_data is None:
             return None
@@ -124,13 +141,14 @@ def load_from_topology(json_data: dict) -> tuple:
 def load_from_insertion(json_data: dict) -> tuple:
     """
     Load a tree from JSON in insertion mode.
+
     Inserts flights into AVL (balanced) and BST (unbalanced).
 
     Args:
-        json_data: Dict payload { "type": "insertion", "flights": [...] }
+        json_data (dict): Dictionary payload { "type": "insertion", "flights": [...] }
 
     Returns:
-        tuple: (avl, bst) populated trees
+        tuple: (avl, bst) populated AVL and BST trees
     """
     flights = None
     if "flights" in json_data:
@@ -177,14 +195,16 @@ def load_trees_from_json(json_content: str) -> tuple:
     """
     Load trees from a JSON string.
 
+    Parses JSON content and determines whether to load in insertion or topology mode.
+
     Args:
-        json_content: JSON content as string
+        json_content (str): JSON content as string
 
     Returns:
-        tuple: (avl, bst, load_type)
+        tuple: (avl, bst, load_type) where load_type is "insertion" or "topology"
 
     Raises:
-        ValueError: Invalid JSON format
+        ValueError: Invalid JSON format or missing required fields
         json.JSONDecodeError: Invalid JSON syntax
     """
     try:
@@ -221,21 +241,21 @@ def load_trees_from_json(json_content: str) -> tuple:
 def export_tree_to_json(tree) -> dict:
     """
     Export the AVL tree to a topology JSON payload.
-    Preserves the exact structure (not just a flight list).
 
-    The exported JSON can be reloaded with POST /avl/load-file
-    (idempotent: export + reimport yields the same tree).
+    Preserves the exact structure (not just a flight list). The exported JSON
+    can be reloaded with POST /avl/load-file (idempotent: export + reimport
+    yields the same tree).
 
     Args:
-        tree: AVL tree instance
+        tree: AVL tree instance to export
 
     Returns:
-        dict: JSON structure with:
+        dict: JSON structure containing:
             - type: "topology"
-            - depth_limit: int
-            - rotation_counts: {LL, RR, LR, RL}
-            - mass_cancellation_count: int
-            - root: recursively serialized root node
+            - depth_limit: Current depth limit setting
+            - rotation_counts: Dictionary with LL, RR, LR, RL rotation counts
+            - mass_cancellation_count: Number of mass cancellations performed
+            - root: Recursively serialized root node with full tree structure
     """
     def serialize_node_recursive(node, current_depth=0):
         """
@@ -243,10 +263,10 @@ def export_tree_to_json(tree) -> dict:
 
         Args:
             node: Node to serialize
-            current_depth: Current depth (for tracking)
+            current_depth (int, optional): Current depth in the tree. Defaults to 0.
 
         Returns:
-            dict: Serialized node with full structure
+            dict or None: Serialized node with full structure, or None if node is None
         """
         if node is None:
             return None

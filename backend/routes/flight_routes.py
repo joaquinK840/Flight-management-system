@@ -1,15 +1,30 @@
+"""
+Flight management API routes.
+
+Provides REST endpoints for flight CRUD operations, profitability analysis,
+and tree synchronization.
+"""
+
+from typing import Optional
+
+from core.shared_instances import avl as shared_avl
+from core.shared_instances import (flight_queue,  # Use shared instances
+                                   flight_repository)
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import Optional
-from services.profitability_service import find_least_profitable, count_subtree_size
-from core.shared_instances import flight_repository, flight_queue  # Usar instancias compartidas
-from core.shared_instances import avl as shared_avl
+from services.profitability_service import (count_subtree_size,
+                                            find_least_profitable)
 
 router = APIRouter(prefix="/flights", tags=["Flights"])
 
 
 def _sync_shared_avl_from_repo():
-    """Keep shared AVL in sync with repository tree state."""
+    """
+    Keep shared AVL in sync with repository tree state.
+
+    Synchronizes the shared AVL instance with the current tree state
+    from the flight repository, copying all relevant attributes.
+    """
     tree = flight_repository.tree
     if tree is None:
         return
@@ -62,16 +77,16 @@ class FlightUpdate(BaseModel):
 @router.post("/insert")
 def insert_flight(flight: FlightCreate):
     """
-    Inserta un nuevo vuelo en el árbol.
-    
-    Si tree.stress_mode == False: Usa AVL con balanceo
-    Si tree.stress_mode == True: Usa BST sin balanceo
-    
+    Insert a new flight into the tree.
+
+    If tree.stress_mode == False: Uses AVL with balancing
+    If tree.stress_mode == True: Uses BST without balancing
+
     Args:
-        flight: Datos del vuelo
-        
+        flight: Flight data
+
     Returns:
-        Árbol serializado y estado de la operación
+        Serialized tree and operation status
     """
     try:
         flight_dict = flight.dict()
@@ -95,14 +110,15 @@ def insert_flight(flight: FlightCreate):
 @router.delete("/delete/{codigo}")
 def delete_flight(codigo: int):
     """
-    Elimina un vuelo específico del árbol.
-    El sucesor inorder reemplaza al nodo eliminado.
-    
+    Delete a specific flight from the tree.
+
+    The inorder successor replaces the deleted node.
+
     Args:
-        codigo: Código del vuelo a eliminar
-        
+        codigo: Code of the flight to delete
+
     Returns:
-        Árbol serializado actualizado
+        Updated serialized tree
     """
     try:
         result = flight_repository.delete_flight(codigo)
@@ -121,14 +137,15 @@ def delete_flight(codigo: int):
 @router.delete("/cancel/{codigo}")
 def cancel_flight_subtree(codigo: int):
     """
-    Cancela un vuelo Y TODOS SUS DESCENDIENTES.
-    Incrementa el contador de cancelaciones masivas.
-    
+    Cancel a flight AND ALL ITS DESCENDANTS.
+
+    Increments the mass cancellation counter.
+
     Args:
-        codigo: Código del vuelo raíz del subárbol a cancelar
-        
+        codigo: Code of the root flight of the subtree to cancel
+
     Returns:
-        Árbol serializado, contador de cancelaciones masivas
+        Serialized tree, mass cancellation counter
     """
     try:
         result = flight_repository.cancel_flight_subtree(codigo)
@@ -145,14 +162,14 @@ def cancel_flight_subtree(codigo: int):
 @router.put("/update/{codigo}")
 def update_flight(codigo: int, flight_update: FlightUpdate):
     """
-    Actualiza los datos de un vuelo sin cambiar su posición en el árbol.
-    
+    Update flight data without changing its position in the tree.
+
     Args:
-        codigo: Código del vuelo
-        flight_update: Datos a actualizar (solo campos no nulos se aplican)
-        
+        codigo: Flight code
+        flight_update: Data to update (only non-null fields are applied)
+
     Returns:
-        Árbol serializado actualizado
+        Updated serialized tree
     """
     try:
         # Filtrar solo los campos que vienen (no nulos)
@@ -174,10 +191,10 @@ def update_flight(codigo: int, flight_update: FlightUpdate):
 @router.post("/undo")
 def undo_operation():
     """
-    Revierte la última operación del árbol.
-    
+    Revert the last tree operation.
+
     Returns:
-        Árbol serializado del estado anterior
+        Serialized tree from the previous state
     """
     try:
         result = flight_repository.undo()
@@ -193,10 +210,10 @@ def undo_operation():
 @router.post("/redo")
 def redo_operation():
     """
-    Rehace la última operación desecha.
-    
+    Redo the last undone operation.
+
     Returns:
-        Árbol serializado del estado rehecho
+        Serialized tree from the redone state
     """
     try:
         result = flight_repository.redo()
@@ -212,25 +229,20 @@ def redo_operation():
 @router.get("/metrics")
 def get_flight_metrics():
     """
-    Retorna métricas del árbol actual.
-    
+    Return current tree metrics.
+
     Returns:
-        Dict con altura, hojas, nodos, rotaciones, etc.
+        Dict with height, leaves, nodes, rotations, etc.
     """
-    try:
-        metrics = flight_repository.get_tree_metrics()
-        return {"status": "success", "metrics": metrics}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error obteniendo métricas: {str(e)}")
 
 
 @router.get("/tree")
 def get_tree():
     """
-    Retorna el árbol serializado completo.
-    
+    Return the complete serialized tree.
+
     Returns:
-        Árbol serializado con todos los datos de vuelos
+        Serialized tree with all flight data
     """
     try:
         tree_data = flight_repository._get_serialized_tree()
@@ -242,17 +254,17 @@ def get_tree():
 @router.post("/stress-mode/{enabled}")
 def toggle_stress_mode(enabled: bool):
     """
-    Activa/desactiva stress_mode.
-    
-    En stress_mode:
-    - AVL no aplica rotaciones (solo actualiza alturas)
-    - Inserciones se comportan como BST
-    
+    Enable/disable stress_mode.
+
+    In stress_mode:
+    - AVL does not apply rotations (only updates heights)
+    - Insertions behave like BST
+
     Args:
-        enabled: True para activar, False para desactivar
-        
+        enabled: True to enable, False to disable
+
     Returns:
-        Estado actualizado
+        Updated status
     """
     try:
         if hasattr(flight_repository.tree, 'stress_mode'):
@@ -271,11 +283,12 @@ def toggle_stress_mode(enabled: bool):
 @router.delete("/reset")
 def reset_tree():
     """
-    Reinicia el árbol, la cola FIFO y limpia la pila de undo.
-    Limpia completamente el sistema.
-    
+    Reset the tree, FIFO queue and clear undo stack.
+
+    Completely cleans the system.
+
     Returns:
-        Confirmación de reinicio
+        Reset confirmation
     """
     try:
         # Limpiar el árbol AVL completamente
@@ -303,21 +316,21 @@ def reset_tree():
 @router.delete("/eliminate-least-profitable")
 def eliminate_least_profitable():
     """
-    Elimina el nodo con MENOR rentabilidad del árbol.
-    
-    Proceso:
-    1. Recorrer TODO el árbol calculando rentabilidad de cada nodo
-    2. Encontrar el nodo de menor rentabilidad
-    3. Criterios de desempate:
-       a) Si hay empate, tomar el más lejano a raíz (mayor profundidad)
-       b) Si sigue empate, tomar el de código más grande
-    4. Cancelar ese nodo (eliminar + descendientes)
-    5. Rebalancear el árbol
-    
+    Eliminate the node with LEAST profitability from the tree.
+
+    Process:
+    1. Traverse the ENTIRE tree calculating profitability of each node
+    2. Find the node with least profitability
+    3. Tie-breaking criteria:
+       a) If tie, take the farthest from root (greater depth)
+       b) If still tie, take the one with highest code
+    4. Cancel that node (delete + descendants)
+    5. Rebalance the tree
+
     Returns:
         {
             "status": "success",
-            "message": "Vuelo de menor rentabilidad eliminado",
+            "message": "Flight with least profitability eliminated",
             "eliminated_code": int,
             "eliminated_rentability": float,
             "subtree_size_removed": int,

@@ -1,3 +1,10 @@
+"""
+Tree serialization service with depth-based pricing penalties.
+
+This module provides functionality to serialize AVL trees into JSON-compatible
+dictionaries, applying pricing penalties based on node depth relative to a limit.
+"""
+
 from core.structures.avl_tree.balance import get_balance_factor, get_height
 
 
@@ -6,18 +13,20 @@ def serialize_tree(tree, depth=0, depth_limit=None):
     Serialize the AVL tree with depth-based pricing.
 
     Pricing rules:
-    - If depth <= depth_limit: precio_final = precio_base
-    - If depth > depth_limit: precio_final = precio_base * 1.25 (exact 25%)
+    - If depth <= depth_limit: final_price = base_price
+    - If depth > depth_limit: final_price = base_price * 1.25 (exact 25%)
 
     Args:
         tree: AVL tree instance
+        depth (int, optional): Starting depth for serialization. Defaults to 0.
         depth_limit: Critical depth limit (optional, uses tree.depth_limit if not provided)
 
     Returns:
         dict: {
             "root": serialized tree with recalculated prices,
             "depth_limit": applied limit,
-            "rotations": rotation counts
+            "rotations": rotation counts,
+            "metrics": tree metrics including total nodes and height
         }
     """
     root = tree.getRoot()
@@ -31,7 +40,16 @@ def serialize_tree(tree, depth=0, depth_limit=None):
         depth_limit_val = None
 
     def _serialize_node(node, current_depth):
-        """Serialize a node recursively with price calculation."""
+        """
+        Serialize a node recursively with price calculation.
+
+        Args:
+            node: The tree node to serialize
+            current_depth (int): Current depth in the tree
+
+        Returns:
+            dict or None: Serialized node data or None if node is None
+        """
         if node is None:
             return None
 
@@ -74,14 +92,30 @@ def serialize_tree(tree, depth=0, depth_limit=None):
 
 
 def _count_nodes(node):
-    """Count nodes recursively."""
+    """
+    Count nodes recursively.
+
+    Args:
+        node: The tree node to start counting from
+
+    Returns:
+        int: Total number of nodes in the subtree
+    """
     if node is None:
         return 0
     return 1 + _count_nodes(node.getLeftChild()) + _count_nodes(node.getRightChild())
 
 
 def _get_height(node):
-    """Compute tree height."""
+    """
+    Compute tree height.
+
+    Args:
+        node: The tree node to compute height from
+
+    Returns:
+        int: Height of the subtree rooted at the given node
+    """
     if node is None:
         return 0
     left_height = _get_height(node.getLeftChild())

@@ -1,6 +1,37 @@
 import { useState, useEffect } from 'react'
 import { getTree, searchValue, resetTree, getMetrics, eliminateLeastProfitable, exportTree, loadFile, insertFlight, deleteValue, cancelValue, undoOperation, redoOperation, getTraversal, updateDepthLimit, enableStressMode, disableStressMode, rebalanceTree, auditTree } from '../services/avlService'
 
+/**
+ * Custom React hook for managing AVL tree state and operations.
+ * 
+ * This hook provides a complete interface for tree manipulation including:
+ * - Tree state management (tree structure, metrics, depth limit)
+ * - Search, insert, delete, and cancel operations
+ * - Undo/redo functionality
+ * - Tree traversals (inorder, preorder, postorder, BFS)
+ * - File import/export and tree comparison
+ * - Stress mode testing and audit reports
+ * - Tree comparison with BST equivalents
+ * 
+ * @returns {Object} Hook state and handler functions:
+ *   - tree: Current AVL tree root node
+ *   - bstTree: BST tree root for comparison
+ *   - value: Current input value for operations
+ *   - setValue: Function to update current input value
+ *   - searchResult: Last search operation result
+ *   - treeHeight: Calculated height of AVL tree
+ *   - balanceFactor: Balance factor of root node
+ *   - traversalMode: Last traversal mode used
+ *   - traversalResult: Result of last traversal operation
+ *   - comparisonData: AVL vs BST comparison metrics
+ *   - showComparison: Flag to display comparison panel
+ *   - metrics: Current tree metrics (height, nodes, rotations, etc)
+ *   - stressMode: Flag indicating if stress mode is active
+ *   - auditReport: Audit report from stress mode analysis
+ *   - bstNote: Descriptive note about BST construction
+ *   - depthLimit: Current depth limit for price penalties
+ *   - Handler functions for all tree operations...
+ */
 const useAvlTree = () => {
   const [tree, setTree] = useState(null)
   const [bstTree, setBstTree] = useState(null)
@@ -22,17 +53,27 @@ const useAvlTree = () => {
     refreshTree()
   }, [])
 
+  /**
+   * Load/reload the tree from backend.
+   * @returns {Promise<void>}
+   */
   const loadTree = async () => {
     await refreshTree()
   }
 
+  /**
+   * Refresh tree structure and metrics from backend.
+   * Fetches the current AVL tree root and metrics in parallel.
+   * Updates local state with tree structure and depth limit.
+   * @returns {Promise<void>}
+   */
   const refreshTree = async () => {
     try {
       const [treeData, metricsData] = await Promise.all([
         getTree(),
         getMetrics()
       ])
-      // El backend retorna { root, depth_limit, rotations, metrics }
+      // Backend returns { root, depth_limit, rotations, metrics }
       setTree(treeData.root)
       setBalanceFactor(treeData.root?.balance_factor ?? 0)
       if (typeof treeData.depth_limit === 'number') {
@@ -40,43 +81,70 @@ const useAvlTree = () => {
       }
       setMetrics(metricsData)
     } catch (err) {
-      console.error('Error cargando árbol:', err)
+      console.error('Error loading tree:', err)
     }
   }
+
+  /**
+   * Refresh only the tree metrics without reloading tree structure.
+   * Useful for quick updates after operations that don't change structure.
+   * @returns {Promise<void>}
+   */
   const refreshMetrics = async () => {
     try {
       const metricsData = await getMetrics()
       setMetrics(metricsData)
     } catch (err) {
-      console.error('Error cargando métricas:', err)
+      console.error('Error loading metrics:', err)
     }
   }
 
+  /**
+   * Calculate height of a subtree recursively.
+   * Returns 0 for null nodes, otherwise 1 + max(left height, right height).
+   * @param {Object} node - Tree node to calculate height for
+   * @returns {number} Height of the subtree
+   */
   const calculateHeight = (node) => {
     if (!node) return 0
     return 1 + Math.max(calculateHeight(node.left), calculateHeight(node.right))
   }
 
+  /**
+   * Count total nodes in a subtree recursively.
+   * @param {Object} node - Tree node to count from
+   * @returns {number} Total node count in subtree
+   */
   const countNodes = (node) => {
     if (!node) return 0
     return 1 + countNodes(node.left) + countNodes(node.right)
   }
 
+  /**
+   * Load tree from JSON file (topology or insertion mode).
+   * Supports two modes:
+   *   - "topology": Load tree structure directly, build equivalent BST
+   *   - "insertion": Insert flights sequentially to build both AVL and BST
+   * Updates comparison data with metrics from both trees.
+   * @param {File} file - JSON file to load
+   * @param {string} loadType - Load mode "topology" or "insertion"
+   * @returns {Promise<void>}
+   */
   const handleFileLoad = async (file, loadType) => {
     if (!file) return
     try {
       const data = await loadFile(file, loadType)
       
-      // Actualizar árboles
+      // Update both trees
       setTree(data.avl.tree)
       setBstTree(data.bst.tree)
       if (data.load_type === 'topology') {
-        setBstNote('BST construido insertando los mismos vuelos en orden inorden — sin balanceo automático')
+        setBstNote('BST built by inserting same flights in-order — no automatic balancing')
       } else {
         setBstNote('')
       }
       
-      // Guardar datos de comparación con métricas reales del servidor
+      // Store comparison data with real server metrics
       if (data.avl.metrics && data.bst.metrics) {
         setComparisonData({
           avl: {
@@ -98,17 +166,24 @@ const useAvlTree = () => {
       
       await refreshMetrics()
     } catch (err) {
-      console.error('Error cargando archivo:', err)
-      alert(`❌ Error cargando archivo: ${err.message}`)
+      console.error('Error loading file:', err)
+      alert(`❌ Error loading file: ${err.message}`)
     }
   }
 
+  /**
+   * Insert a flight into the AVL tree.
+   * Validates and normalizes flight data (codigo, origin, destination, etc).
+   * Updates tree structure and metrics.
+   * @param {Object} flightData - Flight object with codigo, origen, destino, etc
+   * @returns {Promise<void>}
+   */
   const handleInsert = async (flightData) => {
     if (!flightData) return
     try {
       const codigo = parseInt(flightData.codigo, 10)
       if (Number.isNaN(codigo)) {
-        alert('❌ Valor inválido')
+        alert('❌ Invalid value')
         return
       }
       const payload = {
@@ -125,11 +200,17 @@ const useAvlTree = () => {
       setTree(result.tree.root)
       await refreshMetrics()
     } catch (err) {
-      console.error('Error insertando vuelo:', err)
-      alert(`❌ Error insertando vuelo: ${err.message}`)
+      console.error('Error inserting flight:', err)
+      alert(`❌ Error inserting flight: ${err.message}`)
     }
   }
 
+  /**
+   * Delete a flight by its codigo from the tree.
+   * Uses simple deletion (not subtree cancellation).
+   * Clears input value and refreshes metrics.
+   * @returns {Promise<void>}
+   */
   const handleDelete = async () => {
     if (!value) return
     try {
@@ -139,11 +220,17 @@ const useAvlTree = () => {
       setValue('')
       await refreshMetrics()
     } catch (err) {
-      console.error('Error eliminando vuelo:', err)
-      alert(`❌ Error eliminando vuelo: ${err.message}`)
+      console.error('Error deleting flight:', err)
+      alert(`❌ Error deleting flight: ${err.message}`)
     }
   }
 
+  /**
+   * Cancel a flight and its entire subtree.
+   * Performs mass cancellation of all descendant nodes.
+   * Clears input and shows success alert.
+   * @returns {Promise<void>}
+   */
   const handleCancelFlight = async () => {
     if (!value) return
     try {

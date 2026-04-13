@@ -1,30 +1,39 @@
+"""
+Stack data structure (LIFO - Last In First Out).
+
+This module implements a stack used for undo functionality in the tree repository.
+"""
+
 class Stack:
     """
-    Estructura de datos Stack (LIFO - Last In First Out).
-    Utilizada para implementar la pila de undo en el repositorio de árboles.
+    LIFO stack data structure.
+
+    Used to implement undo/redo stacks in the tree repository for managing
+    tree state history.
     """
 
     def __init__(self):
+        """Initialize an empty stack."""
         self.items = []
 
     def push(self, item):
         """
-        Agrega un elemento al tope de la pila.
-        
+        Add an element to the top of the stack.
+
         Args:
-            item: Elemento a agregar
+            item: Element to add (any type)
         """
         self.items.append(item)
 
     def pop(self):
         """
-        Extrae y retorna el elemento del tope de la pila.
-        
+        Remove and return the top element from the stack.
+
         Returns:
-            El elemento del tope, o None si la pila está vacía
-            
+            The top element
+
         Raises:
-            IndexError: Si la pila está vacía
+            IndexError: If the stack is empty
         """
         if len(self.items) == 0:
             raise IndexError("Pop from empty stack")
@@ -32,10 +41,10 @@ class Stack:
 
     def peek(self):
         """
-        Retorna el elemento del tope sin extraerlo.
-        
+        Return the top element without removing it.
+
         Returns:
-            El elemento del tope, o None si la pila está vacía
+            The top element or None if stack is empty
         """
         if len(self.items) == 0:
             return None
@@ -43,30 +52,30 @@ class Stack:
 
     def is_empty(self):
         """
-        Verifica si la pila está vacía.
-        
+        Check if the stack is empty.
+
         Returns:
-            bool: True si no hay elementos, False en caso contrario
+            bool: True if no elements, False otherwise
         """
         return len(self.items) == 0
 
     def size(self):
         """
-        Retorna la cantidad de elementos en la pila.
-        
+        Return the number of elements in the stack.
+
         Returns:
-            int: Número de elementos
+            int: Number of elements
         """
         return len(self.items)
 
     def clear(self):
-        """
-        Vacía completamente la pila.
-        """
+        """Clear all elements from the stack."""
         self.items = []
 
     def __str__(self):
+        """String representation of the stack."""
         return f"Stack({self.items})"
 
     def __repr__(self):
+        """String representation for debugging."""
         return self.__str__()

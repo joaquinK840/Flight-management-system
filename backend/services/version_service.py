@@ -1,6 +1,7 @@
 """
-Servicio de Versionado de Árboles
-Permite guardar, restaurar y gestionar versiones completas del árbol AVL.
+Tree versioning service.
+
+Allows saving, restoring, and managing complete versions of the AVL tree.
 """
 
 from datetime import datetime
@@ -11,20 +12,21 @@ from core.structures.avl_tree.balance import update_height
 
 class VersionService:
     """
-    Servicio de versionado para árboles.
-    Mantiene un diccionario de versiones guardadas del árbol completo.
+    Versioning service for trees.
+
+    Maintains a dictionary of saved versions of the complete tree.
     """
 
     def __init__(self):
         """
-        Inicializa el servicio de versionado.
-        
-        Estructura:
+        Initialize the versioning service.
+
+        Structure:
         {
-            "nombre_version": {
+            "version_name": {
                 "timestamp": "2026-04-12 10:30:45",
-                "tree_data": { nodo serializado },
-                "metrics": { altura, nodos, hojas, etc }
+                "tree_data": { serialized node },
+                "metrics": { height, nodes, leaves, etc }
             }
         }
         """
@@ -32,19 +34,20 @@ class VersionService:
 
     def save_version(self, tree, version_name: str, queue=None) -> dict:
         """
-        Guarda el estado actual del árbol Y LA COLA como una nueva versión.
-        Serializa la estructura jerárquica completa del árbol.
-        
+        Save the current state of the tree AND THE QUEUE as a new version.
+
+        Serializes the complete hierarchical structure of the tree.
+
         Args:
-            tree: Árbol AVL/BST a guardar
-            version_name: Nombre de la versión
-            queue: Cola FIFO opcional para guardar
-            
+            tree: AVL/BST tree to save
+            version_name (str): Name of the version
+            queue: Optional FIFO queue to save
+
         Returns:
-            Dict con confirmación, timestamp, y lista de versiones
-            
+            dict: Dictionary with confirmation, timestamp, and list of versions
+
         Raises:
-            ValueError: Si el nombre ya existe o está vacío, o si el árbol está vacío
+            ValueError: If name already exists or is empty, or if tree is empty
         """
         if not version_name or not version_name.strip():
             raise ValueError("El nombre de la versión no puede estar vacío")
@@ -97,14 +100,15 @@ class VersionService:
 
     def _serialize_tree_complete(self, node):
         """
-        Serializa un árbol completo preservando la estructura jerárquica.
-        Importante: Guarda value, datos, height, left, right para reconstrucción exacta.
-        
+        Serialize a complete tree preserving the hierarchical structure.
+
+        Important: Saves value, data, height, left, right for exact reconstruction.
+
         Args:
-            node: Nodo raíz del árbol
-            
+            node: Root node of the tree
+
         Returns:
-            Dict con estructura completa del árbol
+            dict: Dictionary with complete tree structure
         """
         if node is None:
             return None
@@ -119,13 +123,13 @@ class VersionService:
 
     def _calculate_metrics(self, tree) -> dict:
         """
-        Calcula métricas del árbol para guardar en la versión.
-        
+        Calculate tree metrics to save in the version.
+
         Args:
-            tree: Árbol a medir
-            
+            tree: Tree to measure
+
         Returns:
-            Dict con métricas
+            dict: Dictionary with metrics
         """
         root = tree.getRoot()
         
@@ -147,25 +151,25 @@ class VersionService:
 
     def get_version_list(self) -> List[str]:
         """
-        Retorna lista de nombres de versiones guardadas.
-        
+        Return list of saved version names.
+
         Returns:
-            Lista de nombres de versiones
+            List[str]: List of version names
         """
         return list(self.versions.keys())
 
     def get_version_info(self, version_name: str) -> dict:
         """
-        Obtiene información detallada de una versión.
-        
+        Get detailed information about a version.
+
         Args:
-            version_name: Nombre de la versión
-            
+            version_name (str): Name of the version
+
         Returns:
-            Dict con información de la versión
-            
+            dict: Dictionary with version information
+
         Raises:
-            ValueError: Si la versión no existe
+            ValueError: If the version does not exist
         """
         if version_name not in self.versions:
             raise ValueError(f"La versión '{version_name}' no existe")
@@ -181,20 +185,22 @@ class VersionService:
 
     def restore_version(self, tree, version_name: str, queue=None) -> dict:
         """
-        Restaura un árbol Y LA COLA desde una versión guardada.
-        Reconstruye exactamente la topología original con las mismas alturas.
-        
+        Restore a tree AND THE QUEUE from a saved version.
+
+        Reconstructs exactly the original topology with the same heights.
+
         Args:
-            tree: Árbol destino (se limpiará y llenará)
-            version_name: Nombre de la versión a restaurar
-            queue: Cola FIFO opcional a restaurar
-            
+            tree: Target tree (will be cleared and filled)
+            version_name (str): Name of the version to restore
+            queue: Optional FIFO queue to restore
+
         Returns:
-            Dict con confirmación y árbol restaurado serializado
-            
+            dict: Dictionary with confirmation and serialized restored tree
+
         Raises:
-            ValueError: Si la versión no existe o está vacía
+            ValueError: If the version does not exist or is empty
         """
+        
         if version_name not in self.versions:
             raise ValueError(f"La versión '{version_name}' no existe")
         
@@ -280,14 +286,15 @@ class VersionService:
 
     def _deserialize_tree_complete(self, tree_data):
         """
-        Reconstruye un árbol desde datos serializados.
-        Mantiene la estructura jerárquica original.
-        
+        Reconstruct a tree from serialized data.
+
+        Maintains the original hierarchical structure.
+
         Args:
-            tree_data: Dict con estructura del árbol
-            
+            tree_data: Dictionary with tree structure
+
         Returns:
-            Nodo raíz del árbol reconstruido
+            Root node of the reconstructed tree
         """
         if tree_data is None:
             return None
@@ -325,16 +332,16 @@ class VersionService:
 
     def delete_version(self, version_name: str) -> dict:
         """
-        Elimina una versión guardada.
-        
+        Delete a saved version.
+
         Args:
-            version_name: Nombre de la versión a eliminar
-            
+            version_name (str): Name of the version to delete
+
         Returns:
-            Dict con confirmación
-            
+            dict: Dictionary with confirmation
+
         Raises:
-            ValueError: Si la versión no existe
+            ValueError: If the version does not exist
         """
         if version_name not in self.versions:
             raise ValueError(f"La versión '{version_name}' no existe")
@@ -350,10 +357,10 @@ class VersionService:
 
     def clear_all_versions(self) -> dict:
         """
-        Elimina todas las versiones guardadas.
-        
+        Delete all saved versions.
+
         Returns:
-            Dict con confirmación
+            dict: Dictionary with confirmation
         """
         count = len(self.versions)
         self.versions.clear()
@@ -366,17 +373,17 @@ class VersionService:
 
     def overwrite_version(self, tree, version_name: str) -> dict:
         """
-        Sobrescribe una versión existente con el estado actual del árbol.
-        
+        Overwrite an existing version with the current tree state.
+
         Args:
-            tree: Árbol actual
-            version_name: Nombre de la versión a sobrescribir
-            
+            tree: Current tree
+            version_name (str): Name of the version to overwrite
+
         Returns:
-            Dict con confirmación
-            
+            dict: Dictionary with confirmation
+
         Raises:
-            ValueError: Si la versión no existe
+            ValueError: If the version does not exist
         """
         if version_name not in self.versions:
             raise ValueError(f"La versión '{version_name}' no existe")
@@ -400,13 +407,29 @@ class VersionService:
         }
 
     def _count_nodes(self, node) -> int:
-        """Cuenta nodos recursivamente."""
+        """
+        Count nodes recursively.
+
+        Args:
+            node: Root node of the subtree to count
+
+        Returns:
+            int: Number of nodes in the subtree
+        """
         if node is None:
             return 0
         return 1 + self._count_nodes(node.getLeftChild()) + self._count_nodes(node.getRightChild())
 
     def _count_leaves(self, node) -> int:
-        """Cuenta hojas recursivamente."""
+        """
+        Count leaves recursively.
+
+        Args:
+            node: Root node of the subtree to count
+
+        Returns:
+            int: Number of leaf nodes in the subtree
+        """
         if node is None:
             return 0
         if node.getLeftChild() is None and node.getRightChild() is None:
@@ -415,13 +438,13 @@ class VersionService:
 
     def export_version_as_json(self, version_name: str) -> str:
         """
-        Exporta una versión como string JSON.
-        
+        Export a version as JSON string.
+
         Args:
-            version_name: Nombre de la versión
-            
+            version_name (str): Name of the version
+
         Returns:
-            String JSON con la versión
+            str: JSON string with the version data
         """
         import json
         if version_name not in self.versions:
@@ -437,14 +460,14 @@ class VersionService:
 
     def compare_versions(self, version1: str, version2: str) -> dict:
         """
-        Compara dos versiones y retorna sus diferencias.
-        
+        Compare two versions and return their differences.
+
         Args:
-            version1: Nombre de la primera versión
-            version2: Nombre de la segunda versión
-            
+            version1 (str): Name of the first version
+            version2 (str): Name of the second version
+
         Returns:
-            Dict con comparación de métricas
+            dict: Dictionary with metrics comparison
         """
         if version1 not in self.versions:
             raise ValueError(f"La versión '{version1}' no existe")

@@ -1,38 +1,49 @@
-from fastapi import APIRouter, UploadFile, HTTPException, File, Depends
-from fastapi.responses import FileResponse, JSONResponse
-import json
+"""
+AVL tree management API routes.
+
+Provides REST endpoints for AVL tree operations, file loading/saving,
+stress mode controls, and tree comparisons.
+"""
+
 import io
-from core.structures.bst_tree.bst import BST
+import json
+
+from controllers.simulation_controller import (clear_queue, enqueue_flight,
+                                               list_queue, process_next)
+from core.shared_instances import (avl, flight_queue,  # Use shared instances
+                                   flight_repository)
 from core.structures.avl_tree.cancel import cancel as cancel_node
+from core.structures.bst_tree.bst import BST
 from core.structures.node.node import Node
-from core.shared_instances import avl, flight_queue, flight_repository  # Usar instancias compartidas
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi.responses import FileResponse, JSONResponse
+from services.json_manager import export_tree_to_json, load_trees_from_json
 from services.metrics import get_metrics
-from services.profitability_service import find_least_profitable, count_subtree_size
-from services.json_manager import load_trees_from_json, export_tree_to_json
+from services.profitability_service import (count_subtree_size,
+                                            find_least_profitable)
 from services.serialize_tree import serialize_tree
-from services.stress_mode_service import rebalance_tree_postorder, audit_tree
-from controllers.simulation_controller import enqueue_flight, list_queue, process_next, clear_queue
+from services.stress_mode_service import audit_tree, rebalance_tree_postorder
 
 router = APIRouter(prefix="/avl", tags=["AVL Tree"])
 
-# instancias globales para comparación AVL vs BST
+# Global instances for AVL vs BST comparison
 bst_global = None
 load_type_global = None
 
 
 # -----------------------------
-# SERIALIZADOR DEL ÁRBOL
+# TREE SERIALIZER
 # -----------------------------
 def serialize(node):
+    """
+    Serialize a tree node recursively.
 
-    if node is None:
-        return None
+    Args:
+        node: Tree node to serialize
 
-    return {
-        "value": node.getValue(),
-        "left": serialize(node.getLeftChild()),
-        "right": serialize(node.getRightChild())
-    }
+    Returns:
+        dict or None: Serialized node structure or None if node is None
+    """
 
 
 # -----------------------------
@@ -40,18 +51,15 @@ def serialize(node):
 # -----------------------------
 @router.post("/insert/{value}")
 def insert_value(value: int):
+    """
+    Insert a value into the AVL tree.
 
-    node = Node(value)
+    Args:
+        value: Integer value to insert
 
-    avl.insert(node)
-
-    serialized = serialize_tree(avl, depth=0, depth_limit=avl.depth_limit)
-
-    return {
-        "message": "Nodo insertado",
-        "root": avl.getRoot().getValue(),
-        "tree": serialized["root"]
-    }
+    Returns:
+        dict: Insertion result with message, root value, and serialized tree
+    """
 
 
 # -----------------------------
@@ -60,9 +68,10 @@ def insert_value(value: int):
 @router.get("/tree")
 def get_tree():
     """
-    Obtiene el árbol serializado con precios calculados según profundidad crítica.
-    - Usa tree.depth_limit para determinar qué nodos aplican penalización de 25%
-    - Recalcula precios en cada llamada según depth_limit actual
+    Get the tree serialized with prices calculated according to critical depth.
+
+    - Uses tree.depth_limit to determine which nodes apply 25% penalty
+    - Recalculates prices on each call according to current depth_limit
     """
     return serialize_tree(avl, depth=0, depth_limit=avl.depth_limit)
 
@@ -74,16 +83,17 @@ def get_tree():
 @router.put("/config/depth-limit")
 def update_depth_limit(request: dict):
     """
-    Actualiza el límite de profundidad crítica del árbol.
-    - Todos los precios se recalculan automáticamente
-    - Nodos en profundidad > limit tienen penalización del 25%
-    - Nodos en profundidad <= limit carecen de penalización
-    
+    Update the critical depth limit of the tree.
+
+    - All prices are automatically recalculated
+    - Nodes at depth > limit have 25% penalty
+    - Nodes at depth <= limit have no penalty
+
     Body:
         { "limit": 4 }
-        
+
     Returns:
-        Árbol completo serializado con precios recalculados según nuevo limite
+        Complete tree serialized with prices recalculated according to new limit
     """
     try:
         new_limit = request.get("limit")
@@ -246,7 +256,8 @@ async def load_file(file: UploadFile = File(...)):
         new_avl, bst_global, load_type_global = load_trees_from_json(json_content)
 
         # Sincronizar la instancia compartida en lugar de reasignar variable local
-        from core.shared_instances import avl as shared_avl, flight_repository
+        from core.shared_instances import avl as shared_avl
+        from core.shared_instances import flight_repository
         shared_avl.root = new_avl.root
         shared_avl.rotation_counts = getattr(new_avl, 'rotation_counts', {"LL": 0, "RR": 0, "LR": 0, "RL": 0})
         shared_avl.mass_cancellation_count = getattr(new_avl, 'mass_cancellation_count', 0)
@@ -336,12 +347,9 @@ def get_tree_metrics():
 @router.get("/traversal/{mode}")
 def get_traversal(mode: str):
     """Return tree traversal in the specified order: pre, in, post, bfs."""
-    from core.structures.avl_tree.traversal import (
-        pre_order,
-        in_order,
-        post_order,
-        breadth_first_traversal
-    )
+    from core.structures.avl_tree.traversal import (breadth_first_traversal,
+                                                    in_order, post_order,
+                                                    pre_order)
 
     root = avl.getRoot()
     traversal_map = {

@@ -1,3 +1,11 @@
+"""
+Flight data model with serialization capabilities.
+
+This module defines the Flight class, which represents a flight entity
+with all its attributes and provides methods for converting between
+dictionary representations and Flight instances.
+"""
+
 class Flight:
     """
     Model representing a flight with all its associated data.
