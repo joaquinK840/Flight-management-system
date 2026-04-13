@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { apiDelete, apiGet, apiPost, apiPut, apiUpload } from "./app/apiClient";
+import { apiDelete, apiGet, apiPost, apiPut, apiUpload, API_BASE_URL } from "./app/apiClient";
 import { C } from "./app/theme";
 import Toast from "./app/components/Toast";
 import Btn from "./app/components/Btn";
@@ -38,6 +38,26 @@ export default function App(){
     if(data.root!==undefined)return data.root;
     if(data.tree!==undefined)return extractTree(data.tree);
     return data;
+  };
+  const getLeastProfitable=(root)=>{
+    if(!root) return null;
+    let best={ rent: Infinity, depth: -1, code: null, node: null };
+    const walk=(n, depth=0)=>{
+      if(!n) return;
+      const pasajeros = n.pasajeros ?? n.datos?.pasajeros ?? 0;
+      const precioFinal = n.precioFinal ?? n.datos?.precioFinal ?? n.precioBase ?? n.datos?.precioBase ?? 0;
+      const promocion = n.promocion ?? n.datos?.promocion ?? false;
+      const rent = (pasajeros * precioFinal) - (promocion ? 0.1 * precioFinal : 0);
+      const code = n.codigo ?? n.value ?? null;
+      if(rent < best.rent || (rent === best.rent && depth > best.depth) || (rent === best.rent && depth === best.depth && code > best.code)){
+        best = { rent, depth, code, node: n };
+      }
+      walk(n.left, depth + 1);
+      walk(n.right, depth + 1);
+    };
+    walk(root, 0);
+    if(best.code == null) return null;
+    return { code: best.code, rent: Math.round(best.rent * 100) / 100, depth: best.depth };
   };
   const loadTree=async()=>{try{const d=await apiGet("/avl/tree");setTree(extractTree(d));}catch{}};
   const loadMetrics=async()=>{try{const d=await apiGet("/avl/metrics");if(d){setMetrics(d);setStress(d.stress_mode??false);}}catch{}};
@@ -78,8 +98,17 @@ export default function App(){
       const parsed=normalizeCodigo(value);
       if(!parsed.ok){notify("Código inválido","warning");return;}
       try{
-        await apiDelete(`/flights/delete/${parsed.value}`);
-        await loadTree();
+        let d=await apiDelete(`/flights/delete/${parsed.value}`);
+        if(d?.detail){
+          d=await apiDelete(`/avl/delete/${parsed.value}`);
+          if(d?.detail){
+            notify(d.detail,"error");
+            return;
+          }
+        }
+        if(d?.tree){
+          setTree(extractTree(d.tree));
+        }
         notify(`Vuelo ${value} eliminado`,"success");
         setValue("");
         await loadMetrics();
@@ -89,8 +118,17 @@ export default function App(){
       const parsed=normalizeCodigo(value);
       if(!parsed.ok){notify("Código inválido","warning");return;}
       try{
-        await apiDelete(`/flights/cancel/${parsed.value}`);
-        await loadTree();
+        let d=await apiDelete(`/flights/cancel/${parsed.value}`);
+        if(d?.detail){
+          d=await apiDelete(`/avl/cancel/${parsed.value}`);
+          if(d?.detail){
+            notify(d.detail,"error");
+            return;
+          }
+        }
+        if(d?.tree){
+          setTree(extractTree(d.tree));
+        }
         notify(`Vuelo ${value} cancelado`,"info");
         setValue("");
         await loadMetrics();
@@ -100,10 +138,30 @@ export default function App(){
     redo:     async()=>{try{const d=await apiPost("/flights/redo");setTree(extractTree(d));notify("Rehecho","info");await loadMetrics();}catch{}},
     profit:   async()=>{
       try{
-        const d=await apiDelete("/flights/eliminate-least-profitable");
-        await loadTree();
+        let res=await fetch(`${API_BASE_URL}/flights/eliminate-least-profitable`,{method:"DELETE"});
+        if(res.status===404){
+          res=await fetch(`${API_BASE_URL}/avl/least-profitable`,{method:"DELETE"});
+        }
+        const d=await res.json().catch(()=>({}));
+        if(!res.ok){
+          notify(d?.detail || d?.message || "Error al eliminar menor rentabilidad","error");
+          return;
+        }
+        if(d?.tree){
+          setTree(extractTree(d.tree));
+        } else {
+          await loadTree();
+        }
         const code=d?.eliminated_code ?? "";
-        notify(code?`Vuelo ${code} eliminado por menor rentabilidad`:"Nodo eliminado","success");
+        const rent=d?.eliminated_rentability;
+        const removed=d?.subtree_size_removed;
+        const depth=d?.profundidad;
+        const parts=[];
+        if(code) parts.push(`Vuelo ${code}`);
+        if(typeof rent==="number") parts.push(`rentabilidad $${rent}`);
+        if(typeof removed==="number") parts.push(`${removed} nodo(s)`);
+        if(typeof depth==="number") parts.push(`prof ${depth}`);
+        notify(parts.length?`Eliminado: ${parts.join(" · ")}`:"Nodo eliminado","success");
         await loadMetrics();
       }catch{notify("Error","error");}
     },
@@ -149,7 +207,7 @@ export default function App(){
     {toast&&<Toast msg={toast.text} type={toast.type} onClose={()=>setToast(null)}/>}
     <Topbar stressMode={stressMode} metrics={metrics}/>
     <div style={{display:"flex",height:"calc(100vh - 54px)"}}>
-      <Sidebar active={active} setActive={setActive} stressMode={stressMode} metrics={metrics}/>
+      <Sidebar active={active} setActive={setActive} stressMode={stressMode} metrics={metrics} leastProfitable={getLeastProfitable(tree)}/>
       <main style={{flex:1,overflowY:"auto",padding:"20px",background:C.bg}}>{section[active]}</main>
     </div>
   </div>;

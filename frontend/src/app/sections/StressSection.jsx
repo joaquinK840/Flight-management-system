@@ -60,8 +60,7 @@ export default function StressSection({ stressMode, handlers, auditReport, clear
             ) : (
               <Btn color={C.red} bg={C.redDim} border={C.redBdr} onClick={handlers.enableStress}>Activar modo estrés</Btn>
             )}
-            <Btn color={stressMode ? C.textMuted : C.accentLt} bg={stressMode ? C.surface3 : C.accentDim} border={stressMode ? C.border : C.accentBdr} onClick={handlers.rebalance} disabled={stressMode}>Rebalancear</Btn>
-            {stressMode && <Btn color={C.amber} bg={C.amberDim} border={C.amberBdr} onClick={handlers.audit}>Auditar árbol AVL</Btn>}
+            {stressMode && <Btn color={C.amber} bg={C.amberDim} border={C.amberBdr} onClick={handlers.audit}>Verificar Propiedad AVL</Btn>}
           </div>
         </div>
       </div>
@@ -111,7 +110,7 @@ export default function StressSection({ stressMode, handlers, auditReport, clear
         <Card
           header={
             <>
-              <h3 style={gCardTitle}>Rebalanceo global</h3>
+              <h3 style={gCardTitle}>Costos estructuralmente de la reparación</h3>
               <Btn color={C.textSub} bg={C.surface3} border={C.border2} onClick={clearRebalance}>Cerrar</Btn>
             </>
           }

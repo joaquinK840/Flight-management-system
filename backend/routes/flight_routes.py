@@ -83,6 +83,7 @@ def insert_flight(flight: FlightCreate):
             flight_dict["precioFinal"] = precio_base * 0.9 if promocion else precio_base
         
         result = flight_repository.insert_flight(flight_dict)
+        _sync_shared_avl_from_repo()
         return result
     
     except ValueError as e:
@@ -161,6 +162,7 @@ def update_flight(codigo: int, flight_update: FlightUpdate):
             raise ValueError("Al menos un campo debe ser actualizado")
         
         result = flight_repository.update_flight(codigo, updated_fields)
+        _sync_shared_avl_from_repo()
         return result
     
     except ValueError as e:
@@ -179,6 +181,7 @@ def undo_operation():
     """
     try:
         result = flight_repository.undo()
+        _sync_shared_avl_from_repo()
         return result
     
     except ValueError as e:
@@ -197,6 +200,7 @@ def redo_operation():
     """
     try:
         result = flight_repository.redo()
+        _sync_shared_avl_from_repo()
         return result
     
     except ValueError as e:
@@ -335,6 +339,7 @@ def eliminate_least_profitable():
         
         # Cancelar (eliminar nodo + descendientes)
         result = flight_repository.cancel_flight_subtree(codigo)
+        _sync_shared_avl_from_repo()
         
         return {
             "status": "success",

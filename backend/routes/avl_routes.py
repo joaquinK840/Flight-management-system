@@ -5,8 +5,9 @@ import io
 from core.structures.bst_tree.bst import BST
 from core.structures.avl_tree.cancel import cancel as cancel_node
 from core.structures.node.node import Node
-from core.shared_instances import avl, flight_queue  # Usar instancias compartidas
+from core.shared_instances import avl, flight_queue, flight_repository  # Usar instancias compartidas
 from services.metrics import get_metrics
+from services.profitability_service import find_least_profitable, count_subtree_size
 from services.json_manager import load_trees_from_json, export_tree_to_json
 from services.serialize_tree import serialize_tree
 from services.stress_mode_service import rebalance_tree_postorder, audit_tree
@@ -179,15 +180,19 @@ def eliminate_least_profitable():
     Elimina el vuelo con menor rentabilidad economica.
 
     Returns:
-        {"eliminated_code": X, "message": "...", "tree": {...}}
+        {"eliminated_code": X, "eliminated_rentability": R, "subtree_size_removed": N, "tree": {...}}
     """
     try:
-        codigo = avl.eliminate_least_profitable()
-        result_tree = serialize_tree(avl, depth=0, depth_limit=avl.depth_limit)
+        least_node, rentability, codigo, profundidad = find_least_profitable(avl)
+        subtree_size = count_subtree_size(least_node)
+        result = flight_repository.cancel_flight_subtree(codigo)
         return {
             "eliminated_code": codigo,
+            "eliminated_rentability": round(float(rentability), 2),
+            "subtree_size_removed": subtree_size,
+            "profundidad": profundidad,
             "message": f"Vuelo {codigo} eliminado por menor rentabilidad",
-            "tree": result_tree["root"]
+            "tree": result.get("tree")
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

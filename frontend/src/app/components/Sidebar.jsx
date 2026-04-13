@@ -12,7 +12,7 @@ const NAV = [
   { id: "stress", label: "Modo estrés", path: "M13 10V3L4 14h7v7l9-11h-7z" }
 ];
 
-export default function Sidebar({ active, setActive, stressMode, metrics }) {
+export default function Sidebar({ active, setActive, stressMode, metrics, leastProfitable }) {
   return (
     <nav
       style={{
@@ -105,7 +105,10 @@ export default function Sidebar({ active, setActive, stressMode, metrics }) {
           ["Hojas", metrics?.leaves ?? 0, C.violet],
           null,
           ["Rot. LL", metrics?.rotations?.ll ?? 0, C.amber],
-          ["Rot. RR", metrics?.rotations?.rr ?? 0, C.amber]
+          ["Rot. RR", metrics?.rotations?.rr ?? 0, C.amber],
+          null,
+          ["Menor rentab.", leastProfitable?.code ?? "—", C.accentLt],
+          ["Rentabilidad", leastProfitable ? `$${leastProfitable.rent}` : "—", C.textSub]
         ].map((r, i) =>
           r === null ? (
             <div key={i} style={{ height: "1px", background: C.border, margin: "6px 0" }} />

@@ -77,7 +77,8 @@ class VersionService:
             "metrics": metrics,
             "queue_data": queue_data,
             "queue_size": queue_size,
-            "tree_type": "AVL" if hasattr(tree, 'rotation_counts') else "BST"
+            "tree_type": "AVL" if hasattr(tree, 'rotation_counts') else "BST",
+            "stress_mode": bool(getattr(tree, "stress_mode", False))
         }
         
         return {
@@ -223,6 +224,10 @@ class VersionService:
         # Restaurar contador de cancelaciones si aplica
         if hasattr(tree, 'mass_cancellation_count'):
             tree.mass_cancellation_count = version_data["metrics"].get("mass_cancellations", 0)
+
+        # Restaurar stress_mode si aplica
+        if hasattr(tree, 'stress_mode'):
+            tree.stress_mode = bool(version_data.get("stress_mode", False))
         
         # Restaurar conteos de rotaciones si aplica
         if hasattr(tree, 'rotation_counts'):

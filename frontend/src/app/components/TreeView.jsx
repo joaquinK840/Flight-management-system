@@ -1,19 +1,21 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Card from "./Card";
 import Pill from "./Pill";
 import { C, gCardTitle } from "../theme";
 
-function AVLNode({ node, isRoot }) {
+function AVLNode({ node, isRoot, onHover }) {
   if (!node) return null;
   const crit = node.nodoCritico;
   const bg = crit ? C.redDim : isRoot ? C.accentDim : C.surface3;
   const bd = crit ? C.red : isRoot ? C.accentBdr : C.border2;
   const cc = crit ? C.red : isRoot ? C.accentLt : "#c5d5ee";
   const bal = node.balance_factor ?? node.balance ?? 0;
+  const codigo = node.codigo ?? node.value ?? "-";
+  const origen = node.origen ?? node.datos?.origen ?? "-";
+  const destino = node.destino ?? node.datos?.destino ?? "-";
 
   return (
     <div
-      title={`Código: ${node.codigo}\nRuta: ${node.origen ?? ""}→${node.destino ?? ""}\nPasajeros: ${node.pasajeros ?? 0}\nPrecio: $${node.precioFinal ?? 0}\nBalance: ${bal}`}
       style={{
         display: "inline-flex",
         flexDirection: "column",
@@ -24,18 +26,25 @@ function AVLNode({ node, isRoot }) {
         borderRadius: "10px",
         minWidth: "96px",
         cursor: "default",
-        transition: "transform .12s"
+        transition: "transform .12s",
+        position: "relative"
       }}
-      onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.05)")}
-      onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = "scale(1.05)";
+        onHover?.(node);
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = "scale(1)";
+        onHover?.(null);
+      }}
     >
       <div style={{ fontSize: "12px", fontWeight: 700, color: cc, letterSpacing: ".4px" }}>
         {crit && <span style={{ color: C.red }}>⚠ </span>}
-        {node.codigo}
+        {codigo}
       </div>
-      {node.origen && node.destino && (
+      {origen !== "-" && destino !== "-" && (
         <div style={{ fontSize: "10px", color: C.textMuted, marginTop: "3px" }}>
-          {node.origen} → {node.destino}
+          {origen} → {destino}
         </div>
       )}
       <div style={{ fontSize: "9px", color: C.textMuted, marginTop: "4px", fontFamily: "monospace" }}>
@@ -46,6 +55,7 @@ function AVLNode({ node, isRoot }) {
 }
 
 export default function TreeView({ tree, title, showBst }) {
+  const [hoveredNode, setHoveredNode] = useState(null);
   const countNodes = (n) => (!n ? 0 : 1 + countNodes(n.left) + countNodes(n.right));
   const getLevels = (root, maxD) => {
     if (!root) return [];
@@ -89,22 +99,58 @@ export default function TreeView({ tree, title, showBst }) {
           </div>
         </div>
       ) : (
-        <div style={{ overflowX: "auto", maxHeight: "520px", overflowY: "auto", paddingBottom: "4px" }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: "18px", alignItems: "center", minWidth: total > 10 ? "780px" : "auto" }}>
-            {levels.map((lvl, li) => (
-              <div key={li} style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
-                <div style={{ fontSize: "9px", color: C.textMuted, marginBottom: "6px", fontWeight: 600, letterSpacing: "1px" }}>
-                  NIVEL {li}
+        <div style={{ position: "relative" }}>
+          <div style={{ overflowX: "auto", maxHeight: "520px", overflowY: "auto", paddingBottom: "4px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "18px", alignItems: "center", minWidth: total > 10 ? "780px" : "auto" }}>
+              {levels.map((lvl, li) => (
+                <div key={li} style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
+                  <div style={{ fontSize: "9px", color: C.textMuted, marginBottom: "6px", fontWeight: 600, letterSpacing: "1px" }}>
+                    NIVEL {li}
+                  </div>
+                  <div style={{ display: "flex", gap: "10px", justifyContent: "center", flexWrap: "wrap" }}>
+                    {lvl.map((n, i) => (
+                      <AVLNode key={`${n.codigo ?? n.value}-${i}`} node={n} isRoot={li === 0} onHover={setHoveredNode} />
+                    ))}
+                  </div>
+                  {li < levels.length - 1 && <div style={{ marginTop: "8px", color: C.border2, fontSize: "18px" }}>↓</div>}
                 </div>
-                <div style={{ display: "flex", gap: "10px", justifyContent: "center", flexWrap: "wrap" }}>
-                  {lvl.map((n, i) => (
-                    <AVLNode key={`${n.codigo ?? n.value}-${i}`} node={n} isRoot={li === 0} />
-                  ))}
-                </div>
-                {li < levels.length - 1 && <div style={{ marginTop: "8px", color: C.border2, fontSize: "18px" }}>↓</div>}
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
+          {hoveredNode && (
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                right: 0,
+                width: "260px",
+                background: C.surface2,
+                border: `1px solid ${C.border}`,
+                borderRadius: "10px",
+                padding: "12px",
+                boxShadow: "0 10px 26px rgba(0,0,0,.35)",
+                pointerEvents: "none"
+              }}
+            >
+              <div style={{ fontSize: "11px", fontWeight: 700, color: C.text, marginBottom: "8px" }}>
+                Detalle del nodo
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 10px", fontSize: "10px" }}>
+                <div style={{ color: C.textMuted }}>Codigo</div><div style={{ color: C.text }}>{hoveredNode.codigo ?? hoveredNode.value ?? "-"}</div>
+                <div style={{ color: C.textMuted }}>Origen</div><div style={{ color: C.text }}>{hoveredNode.origen ?? hoveredNode.datos?.origen ?? "-"}</div>
+                <div style={{ color: C.textMuted }}>Destino</div><div style={{ color: C.text }}>{hoveredNode.destino ?? hoveredNode.datos?.destino ?? "-"}</div>
+                <div style={{ color: C.textMuted }}>Hora</div><div style={{ color: C.text }}>{hoveredNode.horaSalida ?? hoveredNode.datos?.horaSalida ?? "-"}</div>
+                <div style={{ color: C.textMuted }}>Pasajeros</div><div style={{ color: C.text }}>{hoveredNode.pasajeros ?? hoveredNode.datos?.pasajeros ?? 0}</div>
+                <div style={{ color: C.textMuted }}>Prioridad</div><div style={{ color: C.text }}>{hoveredNode.prioridad ?? hoveredNode.datos?.prioridad ?? 0}</div>
+                <div style={{ color: C.textMuted }}>Precio base</div><div style={{ color: C.text }}>${hoveredNode.precioBase ?? hoveredNode.datos?.precioBase ?? 0}</div>
+                <div style={{ color: C.textMuted }}>Precio final</div><div style={{ color: C.text }}>${hoveredNode.precioFinal ?? hoveredNode.datos?.precioFinal ?? (hoveredNode.precioBase ?? hoveredNode.datos?.precioBase ?? 0)}</div>
+                <div style={{ color: C.textMuted }}>Promocion</div><div style={{ color: C.text }}>{(hoveredNode.promocion ?? hoveredNode.datos?.promocion) ? "si" : "no"}</div>
+                <div style={{ color: C.textMuted }}>Alerta</div><div style={{ color: C.text }}>{(hoveredNode.alerta ?? hoveredNode.datos?.alerta) ? "si" : "no"}</div>
+                <div style={{ color: C.textMuted }}>Profundidad</div><div style={{ color: C.text }}>{hoveredNode.profundidad ?? 0}</div>
+                <div style={{ color: C.textMuted }}>Balance</div><div style={{ color: C.text }}>{hoveredNode.balance_factor ?? hoveredNode.balance ?? 0}</div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </Card>
