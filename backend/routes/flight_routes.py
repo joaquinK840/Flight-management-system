@@ -1,9 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import Optional, Dict
-from services.tree_repository import TreeRepository
+from typing import Optional
 from services.profitability_service import find_least_profitable, count_subtree_size
-from core.structures.avl_tree.tree import AVL
 from core.shared_instances import flight_repository, flight_queue  # Usar instancias compartidas
 
 router = APIRouter(prefix="/flights", tags=["Flights"])

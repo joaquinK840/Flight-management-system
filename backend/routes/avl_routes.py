@@ -5,6 +5,7 @@ import io
 from core.structures.avl_tree.tree import AVL
 from core.structures.bst_tree.bst import BST
 from core.structures.avl_tree import traversal
+from core.structures.avl_tree.cancel import cancel as cancel_node
 from core.structures.node.node import Node
 from services.metrics import get_metrics
 from services.json_manager import load_trees_from_json, export_tree_to_json
@@ -137,6 +138,41 @@ def search_value(value: int):
 
 
 # -----------------------------
+# ELIMINAR VALOR (AVL DIRECTO)
+# -----------------------------
+@router.delete("/delete/{value}")
+def delete_value(value: int):
+    try:
+        avl.delete(value)
+        result_tree = serialize_tree(avl, depth=0, depth_limit=avl.depth_limit)
+        return {
+            "status": "success",
+            "message": f"Valor {value} eliminado",
+            "tree": result_tree["root"]
+        }
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+# -----------------------------
+# CANCELAR VUELO (AVL DIRECTO)
+# -----------------------------
+@router.delete("/cancel/{value}")
+def cancel_value(value: int):
+    try:
+        cancel_node(avl, value)
+        avl.mass_cancellation_count += 1
+        result_tree = serialize_tree(avl, depth=0, depth_limit=avl.depth_limit)
+        return {
+            "status": "success",
+            "message": f"Valor {value} cancelado",
+            "tree": result_tree["root"]
+        }
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+# -----------------------------
 # ELIMINAR MENOR RENTABILIDAD
 # -----------------------------
 @router.delete("/least-profitable")
@@ -204,13 +240,22 @@ async def load_file(file: UploadFile = File(...), load_type: str = Form(None)):
         json_content = content.decode("utf-8")
 
         # Cargar árboles desde JSON
-        avl, bst_global, load_type_global = load_trees_from_json(
+        new_avl, bst_global, load_type_global = load_trees_from_json(
             json_content,
             load_type_override=load_type
         )
 
+        # Sincronizar la instancia compartida en lugar de reasignar variable local
+        from core.shared_instances import avl as shared_avl, flight_repository
+        shared_avl.root = new_avl.root
+        shared_avl.rotation_counts = getattr(new_avl, 'rotation_counts', {"LL": 0, "RR": 0, "LR": 0, "RL": 0})
+        shared_avl.mass_cancellation_count = getattr(new_avl, 'mass_cancellation_count', 0)
+        shared_avl.stress_mode = getattr(new_avl, 'stress_mode', False)
+        shared_avl.depth_limit = getattr(new_avl, 'depth_limit', 3)
+        flight_repository.undo_stack.clear()
+        flight_repository.redo_stack.clear()
         # Serializar árboles
-        avl_serialized = serialize_tree(avl, depth=0, depth_limit=avl.depth_limit)
+        avl_serialized = serialize_tree(shared_avl, depth=0, depth_limit=shared_avl.depth_limit)
         
         # Serializar BST manualmente (no tiene rotation_counts)
         def serialize_node(node):
@@ -239,12 +284,12 @@ async def load_file(file: UploadFile = File(...), load_type: str = Form(None)):
                 "total_nodes": tree.contar_nodos()
             }
 
-        avl_metrics = calculate_tree_metrics(avl)
+        avl_metrics = calculate_tree_metrics(shared_avl)
         bst_metrics = calculate_tree_metrics(bst_global)
 
         # Agregar rotaciones del AVL
-        avl_metrics["rotations"] = avl.rotation_counts
-        avl_metrics["total_rotations"] = sum(avl.rotation_counts.values())
+        avl_metrics["rotations"] = shared_avl.rotation_counts
+        avl_metrics["total_rotations"] = sum(shared_avl.rotation_counts.values())
 
         return {
             "status": "success",
