@@ -3,7 +3,7 @@ import Card from "../components/Card";
 import Pill from "../components/Pill";
 import { C, gCardHeader, gCardTitle } from "../theme";
 
-export default function StressSection({ stressMode, handlers, auditReport, clearAudit, tree }) {
+export default function StressSection({ stressMode, handlers, auditReport, clearAudit, rebalanceReport, clearRebalance, tree }) {
   const findDepth = (n, code, d = 0) => {
     if (!n) return null;
     const c = n.codigo ?? n.value;
@@ -106,6 +106,34 @@ export default function StressSection({ stressMode, handlers, auditReport, clear
             </div>
           )}
         </div>
+      )}
+      {rebalanceReport && (
+        <Card
+          header={
+            <>
+              <h3 style={gCardTitle}>Rebalanceo global</h3>
+              <Btn color={C.textSub} bg={C.surface3} border={C.border2} onClick={clearRebalance}>Cerrar</Btn>
+            </>
+          }
+        >
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))", gap: "10px" }}>
+            <div style={{ background: C.surface2, border: `1px solid ${C.border}`, borderRadius: "10px", padding: "12px" }}>
+              <div style={{ fontSize: "10px", color: C.textMuted, fontWeight: 700, letterSpacing: ".6px" }}>ROTACIONES TOTALES</div>
+              <div style={{ fontSize: "20px", fontWeight: 700, color: C.accentLt }}>{rebalanceReport.total_rotations ?? 0}</div>
+            </div>
+            {[
+              ["LL", "LL"],
+              ["RR", "RR"],
+              ["LR", "LR"],
+              ["RL", "RL"]
+            ].map(([k, key]) => (
+              <div key={k} style={{ background: C.surface2, border: `1px solid ${C.border}`, borderRadius: "10px", padding: "12px" }}>
+                <div style={{ fontSize: "10px", color: C.textMuted, fontWeight: 700, letterSpacing: ".6px" }}>ROT. {k}</div>
+                <div style={{ fontSize: "20px", fontWeight: 700, color: C.text }}>{rebalanceReport.rotation_counts?.[key] ?? 0}</div>
+              </div>
+            ))}
+          </div>
+        </Card>
       )}
     </div>
   );

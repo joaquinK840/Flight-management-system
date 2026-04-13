@@ -11,7 +11,12 @@ export default function QueueSection({ onUpdated }) {
   const [results, setResults] = useState([]);
   const [processing, setProcessing] = useState(false);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ codigo: "", origen: "", destino: "", horaSalida: "", precioBase: "", pasajeros: "", prioridad: 1 });
+  const getNowTime = () => {
+    const pad2 = (n) => String(n).padStart(2, "0");
+    const d = new Date();
+    return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+  };
+  const [form, setForm] = useState({ codigo: "", origen: "", destino: "", horaSalida: getNowTime(), precioBase: 100, pasajeros: 120, prioridad: 1 });
   const [msg, setMsg] = useState(null);
 
   const notify = (t, tp = "info") => {
@@ -36,6 +41,12 @@ export default function QueueSection({ onUpdated }) {
   }, []);
 
   const addFlight = async () => {
+    const rawCode = String(form.codigo ?? "").trim();
+    const digits = rawCode.replace(/\D+/g, "");
+    if (!digits) {
+      notify("Código inválido", "error");
+      return;
+    }
     if (!form.codigo || !form.origen || !form.destino || !form.horaSalida || !form.precioBase || !form.pasajeros) {
       notify("Completa todos los campos", "error");
       return;
@@ -43,13 +54,14 @@ export default function QueueSection({ onUpdated }) {
     try {
       const d = await apiPost("/queue/add", {
         ...form,
+        codigo: parseInt(digits, 10),
         precioBase: parseFloat(form.precioBase),
         pasajeros: parseInt(form.pasajeros),
         prioridad: parseInt(form.prioridad)
       });
       if (d.status === "success") {
         notify("Vuelo agregado", "success");
-        setForm({ codigo: "", origen: "", destino: "", horaSalida: "", precioBase: "", pasajeros: "", prioridad: 1 });
+        setForm({ codigo: "", origen: "", destino: "", horaSalida: getNowTime(), precioBase: 100, pasajeros: 120, prioridad: 1 });
         setShowForm(false);
       } else {
         notify(d.message || "Error", "error");
@@ -62,7 +74,7 @@ export default function QueueSection({ onUpdated }) {
   const processOne = async () => {
     setProcessing(true);
     try {
-      const d = await apiPost("/queue/process_one", {});
+      const d = await apiPost("/queue/process-one", {});
       if (d.status === "success") {
         setResults((p) => [d, ...p].slice(0, 10));
         notify("Vuelo procesado", "success");
@@ -76,7 +88,7 @@ export default function QueueSection({ onUpdated }) {
   const processAll = async () => {
     setProcessing(true);
     try {
-      const d = await apiPost("/queue/process_all", {});
+      const d = await apiPost("/queue/process-all", {});
       if (d.results) {
         setResults((p) => [...d.results, ...p].slice(0, 20));
         notify(`${d.results.length} vuelos procesados`, "success");
@@ -99,7 +111,7 @@ export default function QueueSection({ onUpdated }) {
   };
 
   const fields = [
-    ["Código", "codigo", "number"],
+    ["Código", "codigo", "text"],
     ["Origen", "origen", "text"],
     ["Destino", "destino", "text"],
     ["Hora salida", "horaSalida", "text"],
@@ -139,7 +151,16 @@ export default function QueueSection({ onUpdated }) {
               {fields.map(([label, key, type]) => (
                 <div key={key}>
                   <label style={gLabel}>{label.toUpperCase()}</label>
-                  <input type={type} value={form[key]} onChange={(e) => setForm((p) => ({ ...p, [key]: e.target.value }))} style={gInput} />
+                  {key === "horaSalida" ? (
+                    <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                      <input type={type} value={form[key]} onChange={(e) => setForm((p) => ({ ...p, [key]: e.target.value }))} style={{ ...gInput, flex: 1 }} />
+                      <Btn color={C.textSub} bg={C.surface3} border={C.border2} onClick={() => setForm((p) => ({ ...p, horaSalida: getNowTime() }))}>
+                        Ahora
+                      </Btn>
+                    </div>
+                  ) : (
+                    <input type={type} value={form[key]} onChange={(e) => setForm((p) => ({ ...p, [key]: e.target.value }))} style={gInput} />
+                  )}
                 </div>
               ))}
             </div>

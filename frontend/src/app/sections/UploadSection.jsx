@@ -7,7 +7,7 @@ import { C, gCardTitle, gInput, gLabel } from "../theme";
 export default function UploadSection({ onFileLoad, onExport, depthLimit, onDepthLimitChange }) {
   const topRef = useRef();
   const insRef = useRef();
-  const [dl, setDl] = useState(depthLimit ?? 3);
+  const [dl, setDl] = useState(String(depthLimit ?? 3));
   const [applying, setApplying] = useState(false);
 
   const onFile = async (e, mode) => {
@@ -19,7 +19,10 @@ export default function UploadSection({ onFileLoad, onExport, depthLimit, onDept
   const apply = async () => {
     setApplying(true);
     try {
-      await onDepthLimitChange(dl);
+      const parsed = parseInt(dl, 10);
+      if (!Number.isNaN(parsed)) {
+        await onDepthLimitChange(parsed);
+      }
     } finally {
       setApplying(false);
     }
@@ -72,7 +75,7 @@ export default function UploadSection({ onFileLoad, onExport, depthLimit, onDept
               min="0"
               max="20"
               value={dl}
-              onChange={(e) => setDl(parseInt(e.target.value) || 0)}
+              onChange={(e) => setDl(e.target.value)}
               style={{ ...gInput, width: "90px" }}
             />
           </div>
@@ -80,7 +83,7 @@ export default function UploadSection({ onFileLoad, onExport, depthLimit, onDept
             {applying ? "Aplicando…" : "Aplicar"}
           </Btn>
           <span style={{ color: C.textMuted, fontSize: "12px", paddingBottom: "2px" }}>
-            Actual: <strong style={{ color: C.textSub }}>{dl}</strong>
+            Actual: <strong style={{ color: C.textSub }}>{dl === "" ? "—" : dl}</strong>
           </span>
         </div>
       </Card>

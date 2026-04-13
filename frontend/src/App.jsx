@@ -23,7 +23,7 @@ export default function App(){
   const[value,setValue]=useState(""),[searchResult,setSearch]=useState(null);
   const[traversalResult,setTrav]=useState(null),[traversalMode,setTravMode]=useState(null);
   const[showComparison,setComp]=useState(false),[depthLimit,setDepth]=useState(3);
-  const[auditReport,setAudit]=useState(null),[toast,setToast]=useState(null);
+  const[auditReport,setAudit]=useState(null),[rebalanceReport,setRebalance]=useState(null),[toast,setToast]=useState(null);
 
   const notify=(text,type="info")=>{setToast({text,type});setTimeout(()=>setToast(null),3500);};
   const normalizeCodigo=(input)=>{
@@ -116,14 +116,14 @@ export default function App(){
       setActive("tree");
     },
     reset:    async()=>{try{await apiDelete("/avl/reset");setTree(null);setBstTree(null);setSearch(null);setTrav(null);setComp(false);setMetrics(null);notify("Reiniciado","info");}catch{}},
-    enableStress: async()=>{try{const d=await apiPost("/avl/stress-mode/enable");setTree(extractTree(d?.tree ?? d));setStress(true);notify("Modo estrés activado","warning");await loadMetrics();}catch{}},
-    disableStress:async()=>{try{const d=await apiPost("/avl/stress-mode/disable");setTree(extractTree(d?.tree ?? d));setStress(false);notify("Modo normal restaurado","success");await loadMetrics();}catch{}},
-    rebalance:async()=>{try{const d=await apiPost("/avl/rebalance");setTree(extractTree(d?.tree ?? d));notify("Rebalanceado","success");await loadMetrics();}catch{}},
+    enableStress: async()=>{try{await apiPost("/avl/stress-mode/enable");setStress(true);notify("Modo estrés activado","warning");await loadTree();await loadMetrics();}catch{}},
+    disableStress:async()=>{try{await apiPost("/avl/stress-mode/disable");const d=await apiPost("/avl/rebalance");setRebalance(d);setStress(false);notify("Rebalanceo global aplicado","success");await loadTree();await loadMetrics();}catch{}},
+    rebalance:async()=>{try{const d=await apiPost("/avl/rebalance");setRebalance(d);notify("Rebalanceado","success");await loadTree();await loadMetrics();}catch{}},
     audit:    async()=>{try{const d=await apiGet("/avl/audit");setAudit(d);}catch{notify("Error en auditoría","error");}},
   };
 
   const handleTraversal=async(mode)=>{
-    const apiMode=mode==="level"?"bfs":mode;
+    const apiMode=mode==="level"?"bfs":mode==="depth"?"pre":mode;
     try{
       const d=await apiGet(`/avl/traversal/${apiMode}`);
       setTrav(d.result??d.traversal??d);
@@ -141,7 +141,7 @@ export default function App(){
     metrics:<MetricsSection metrics={metrics} refreshMetrics={loadMetrics}/>,
     queue:<QueueSection onUpdated={onUpdated}/>,
     versions:<VersionSection onRestored={onUpdated}/>,
-    stress:<StressSection stressMode={stressMode} handlers={handlers} auditReport={auditReport} clearAudit={()=>setAudit(null)} tree={tree}/>,
+    stress:<StressSection stressMode={stressMode} handlers={handlers} auditReport={auditReport} clearAudit={()=>setAudit(null)} rebalanceReport={rebalanceReport} clearRebalance={()=>setRebalance(null)} tree={tree}/>,
   };
 
   return<div style={{minHeight:"100vh",background:C.bg,color:C.text,fontFamily:"'Segoe UI',system-ui,sans-serif",fontSize:"13px"}}>
