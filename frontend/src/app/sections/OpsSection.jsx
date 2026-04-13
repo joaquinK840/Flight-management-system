@@ -37,7 +37,7 @@ export default function OpsSection({ value, setValue, handlers, searchResult }) 
             borderRadius: "10px",
             padding: "14px 18px",
             display: "flex",
-            alignItems: "center",
+            alignItems: "flex-start",
             gap: "14px"
           }}
         >
@@ -62,6 +62,30 @@ export default function OpsSection({ value, setValue, handlers, searchResult }) 
               {searchResult.found ? "Vuelo encontrado" : "Vuelo no encontrado"}
             </div>
             <div style={{ color: C.textMuted, fontSize: "11px", marginTop: "2px" }}>Código: {searchResult.value}</div>
+            {searchResult.found && searchResult.node && (
+              <div
+                style={{
+                  marginTop: "10px",
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "6px 12px",
+                  fontSize: "11px",
+                  color: C.text
+                }}
+              >
+                <div style={{ color: C.textMuted }}>Origen</div><div>{searchResult.node.origen ?? searchResult.node.datos?.origen ?? "-"}</div>
+                <div style={{ color: C.textMuted }}>Destino</div><div>{searchResult.node.destino ?? searchResult.node.datos?.destino ?? "-"}</div>
+                <div style={{ color: C.textMuted }}>Hora</div><div>{searchResult.node.horaSalida ?? searchResult.node.datos?.horaSalida ?? "-"}</div>
+                <div style={{ color: C.textMuted }}>Pasajeros</div><div>{searchResult.node.pasajeros ?? searchResult.node.datos?.pasajeros ?? 0}</div>
+                <div style={{ color: C.textMuted }}>Prioridad</div><div>{searchResult.node.prioridad ?? searchResult.node.datos?.prioridad ?? 0}</div>
+                <div style={{ color: C.textMuted }}>Precio base</div><div>${searchResult.node.precioBase ?? searchResult.node.datos?.precioBase ?? 0}</div>
+                <div style={{ color: C.textMuted }}>Precio final</div><div>${searchResult.node.precioFinal ?? searchResult.node.datos?.precioFinal ?? (searchResult.node.precioBase ?? searchResult.node.datos?.precioBase ?? 0)}</div>
+                <div style={{ color: C.textMuted }}>Promoción</div><div>{(searchResult.node.promocion ?? searchResult.node.datos?.promocion) ? "si" : "no"}</div>
+                <div style={{ color: C.textMuted }}>Alerta</div><div>{(searchResult.node.alerta ?? searchResult.node.datos?.alerta) ? "si" : "no"}</div>
+                <div style={{ color: C.textMuted }}>Profundidad</div><div>{searchResult.node.profundidad ?? searchResult.depth ?? 0}</div>
+                <div style={{ color: C.textMuted }}>Balance</div><div>{searchResult.node.balance_factor ?? searchResult.node.balance ?? 0}</div>
+              </div>
+            )}
           </div>
         </div>
       )}

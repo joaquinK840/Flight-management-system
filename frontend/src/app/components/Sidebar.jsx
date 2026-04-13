@@ -12,11 +12,11 @@ const NAV = [
   { id: "stress", label: "Modo estrés", path: "M13 10V3L4 14h7v7l9-11h-7z" }
 ];
 
-export default function Sidebar({ active, setActive, stressMode, metrics, leastProfitable }) {
+export default function Sidebar({ active, setActive, stressMode, metrics, leastProfitable, collapsed, onToggle }) {
   return (
     <nav
       style={{
-        width: "210px",
+        width: collapsed ? "64px" : "210px",
         background: C.surface,
         borderRight: `1px solid ${C.border}`,
         padding: "16px 0",
@@ -26,6 +26,25 @@ export default function Sidebar({ active, setActive, stressMode, metrics, leastP
         flexDirection: "column"
       }}
     >
+      <div style={{ display: "flex", justifyContent: collapsed ? "center" : "flex-end", padding: "0 12px 8px" }}>
+        <button
+          onClick={onToggle}
+          style={{
+            border: `1px solid ${C.border}`,
+            background: C.surface2,
+            color: C.textMuted,
+            borderRadius: "8px",
+            padding: "6px",
+            cursor: "pointer",
+            width: "32px",
+            height: "32px"
+          }}
+          aria-label="Alternar sidebar"
+          title="Alternar sidebar"
+        >
+          {collapsed ? "»" : "«"}
+        </button>
+      </div>
       <div
         style={{
           padding: "0 16px 8px",
@@ -35,7 +54,7 @@ export default function Sidebar({ active, setActive, stressMode, metrics, leastP
           letterSpacing: "1.5px"
         }}
       >
-        NAVEGACIÓN
+        {!collapsed && "NAVEGACIÓN"}
       </div>
       {NAV.map((n) => {
         const on = active === n.id;
@@ -46,8 +65,8 @@ export default function Sidebar({ active, setActive, stressMode, metrics, leastP
             style={{
               display: "flex",
               alignItems: "center",
-              gap: "10px",
-              padding: "9px 16px",
+              gap: collapsed ? "0" : "10px",
+              padding: collapsed ? "9px 0" : "9px 16px",
               width: "100%",
               border: "none",
               borderLeft: `2px solid ${on ? C.accentLt : "transparent"}`,
@@ -55,9 +74,10 @@ export default function Sidebar({ active, setActive, stressMode, metrics, leastP
               color: on ? C.accentLt : C.textMuted,
               fontSize: "13px",
               fontWeight: on ? 600 : 400,
-              textAlign: "left",
+              textAlign: collapsed ? "center" : "left",
               cursor: "pointer",
-              fontFamily: "inherit"
+              fontFamily: "inherit",
+              justifyContent: collapsed ? "center" : "flex-start"
             }}
           >
             <svg
@@ -72,57 +92,59 @@ export default function Sidebar({ active, setActive, stressMode, metrics, leastP
             >
               <path d={n.path} />
             </svg>
-            {n.label}
+            {!collapsed && n.label}
             {n.id === "stress" && stressMode && (
               <Pill text="ON" color={C.red} bg={C.redDim} border={C.redBdr} />
             )}
           </button>
         );
       })}
-      <div
-        style={{
-          margin: "20px 12px 0",
-          padding: "14px",
-          background: C.surface2,
-          border: `1px solid ${C.border}`,
-          borderRadius: "10px"
-        }}
-      >
+      {!collapsed && (
         <div
           style={{
-            fontSize: "9px",
-            fontWeight: 700,
-            color: C.textMuted,
-            letterSpacing: "1px",
-            marginBottom: "10px"
+            margin: "20px 12px 0",
+            padding: "14px",
+            background: C.surface2,
+            border: `1px solid ${C.border}`,
+            borderRadius: "10px"
           }}
         >
-          ESTADO DEL ÁRBOL
+          <div
+            style={{
+              fontSize: "9px",
+              fontWeight: 700,
+              color: C.textMuted,
+              letterSpacing: "1px",
+              marginBottom: "10px"
+            }}
+          >
+            ESTADO DEL ÁRBOL
+          </div>
+          {[
+            ["Altura", metrics?.height ?? 0, C.accentLt],
+            [" Nodos", metrics?.total_nodes ?? 0, C.green],
+            ["Hojas", metrics?.leaves ?? 0, C.violet],
+            null,
+            ["Rot. LL", metrics?.rotations?.ll ?? 0, C.amber],
+            ["Rot. RR", metrics?.rotations?.rr ?? 0, C.amber],
+            null,
+            ["Menor rentab.", leastProfitable?.code ?? "—", C.accentLt],
+            ["Rentabilidad", leastProfitable ? `$${leastProfitable.rent}` : "—", C.textSub]
+          ].map((r, i) =>
+            r === null ? (
+              <div key={i} style={{ height: "1px", background: C.border, margin: "6px 0" }} />
+            ) : (
+              <div
+                key={i}
+                style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}
+              >
+                <span style={{ fontSize: "11px", color: C.textMuted }}>{r[0]}</span>
+                <span style={{ fontSize: "12px", fontWeight: 700, color: r[2] }}>{r[1]}</span>
+              </div>
+            )
+          )}
         </div>
-        {[
-          ["Altura", metrics?.height ?? 0, C.accentLt],
-          [" Nodos", metrics?.total_nodes ?? 0, C.green],
-          ["Hojas", metrics?.leaves ?? 0, C.violet],
-          null,
-          ["Rot. LL", metrics?.rotations?.ll ?? 0, C.amber],
-          ["Rot. RR", metrics?.rotations?.rr ?? 0, C.amber],
-          null,
-          ["Menor rentab.", leastProfitable?.code ?? "—", C.accentLt],
-          ["Rentabilidad", leastProfitable ? `$${leastProfitable.rent}` : "—", C.textSub]
-        ].map((r, i) =>
-          r === null ? (
-            <div key={i} style={{ height: "1px", background: C.border, margin: "6px 0" }} />
-          ) : (
-            <div
-              key={i}
-              style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}
-            >
-              <span style={{ fontSize: "11px", color: C.textMuted }}>{r[0]}</span>
-              <span style={{ fontSize: "12px", fontWeight: 700, color: r[2] }}>{r[1]}</span>
-            </div>
-          )
-        )}
-      </div>
+      )}
     </nav>
   );
 }

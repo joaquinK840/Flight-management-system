@@ -1,30 +1,28 @@
-import { useMemo, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import Card from "./Card";
 import Pill from "./Pill";
 import { C, gCardTitle } from "../theme";
 
-function AVLNode({ node, isRoot, onHover }) {
+function AVLNode({ node, isRoot, onHover, onMount }) {
   if (!node) return null;
   const crit = node.nodoCritico;
   const bg = crit ? C.redDim : isRoot ? C.accentDim : C.surface3;
   const bd = crit ? C.red : isRoot ? C.accentBdr : C.border2;
   const cc = crit ? C.red : isRoot ? C.accentLt : "#c5d5ee";
-  const bal = node.balance_factor ?? node.balance ?? 0;
   const codigo = node.codigo ?? node.value ?? "-";
-  const origen = node.origen ?? node.datos?.origen ?? "-";
-  const destino = node.destino ?? node.datos?.destino ?? "-";
 
   return (
     <div
+      ref={(el) => onMount?.(node, el)}
       style={{
         display: "inline-flex",
         flexDirection: "column",
         alignItems: "center",
-        padding: "10px 14px",
+        padding: "6px 8px",
         background: bg,
         border: `1px solid ${bd}`,
         borderRadius: "10px",
-        minWidth: "96px",
+        minWidth: "44px",
         cursor: "default",
         transition: "transform .12s",
         position: "relative"
@@ -38,17 +36,9 @@ function AVLNode({ node, isRoot, onHover }) {
         onHover?.(null);
       }}
     >
-      <div style={{ fontSize: "12px", fontWeight: 700, color: cc, letterSpacing: ".4px" }}>
+      <div style={{ fontSize: "11px", fontWeight: 700, color: cc, letterSpacing: ".3px" }}>
         {crit && <span style={{ color: C.red }}>⚠ </span>}
         {codigo}
-      </div>
-      {origen !== "-" && destino !== "-" && (
-        <div style={{ fontSize: "10px", color: C.textMuted, marginTop: "3px" }}>
-          {origen} → {destino}
-        </div>
-      )}
-      <div style={{ fontSize: "9px", color: C.textMuted, marginTop: "4px", fontFamily: "monospace" }}>
-        bal:{bal}
       </div>
     </div>
   );
@@ -56,26 +46,94 @@ function AVLNode({ node, isRoot, onHover }) {
 
 export default function TreeView({ tree, title, showBst }) {
   const [hoveredNode, setHoveredNode] = useState(null);
+  const [lines, setLines] = useState([]);
+  const containerRef = useRef(null);
+  const nodeRefs = useRef(new Map());
+  const NODE_WIDTH = 52;
+  const NODE_GAP = 16;
+  const LEVEL_GAP_STEP = 10;
   const countNodes = (n) => (!n ? 0 : 1 + countNodes(n.left) + countNodes(n.right));
   const getLevels = (root, maxD) => {
     if (!root) return [];
     const lvls = [];
-    const q = [{ n: root, d: 0 }];
+    const q = [{ n: root, d: 0, i: 0 }];
     while (q.length) {
-      const { n, d } = q.shift();
+      const { n, d, i } = q.shift();
       if (d > maxD) continue;
-      if (!lvls[d]) lvls[d] = [];
-      lvls[d].push(n);
-      if (n.left) q.push({ n: n.left, d: d + 1 });
-      if (n.right) q.push({ n: n.right, d: d + 1 });
+      if (!lvls[d]) lvls[d] = Array(2 ** d).fill(null);
+      lvls[d][i] = n;
+      if (n.left) q.push({ n: n.left, d: d + 1, i: i * 2 });
+      if (n.right) q.push({ n: n.right, d: d + 1, i: i * 2 + 1 });
     }
     return lvls;
   };
 
   const { total, levels } = useMemo(() => {
+    nodeRefs.current = new Map();
     const t = countNodes(tree);
     return { total: t, levels: getLevels(tree, t > 15 ? 4 : Infinity) };
   }, [tree]);
+
+  const edges = useMemo(() => {
+    const result = [];
+    const walk = (n) => {
+      if (!n) return;
+      if (n.left) result.push([n, n.left]);
+      if (n.right) result.push([n, n.right]);
+      walk(n.left);
+      walk(n.right);
+    };
+    walk(tree);
+    return result;
+  }, [tree]);
+
+  useLayoutEffect(() => {
+    const container = containerRef.current;
+    if (!container || !tree) {
+      setLines([]);
+      return;
+    }
+
+    const buildLines = () => {
+      const containerRect = container.getBoundingClientRect();
+      const scrollLeft = container.scrollLeft;
+      const scrollTop = container.scrollTop;
+      const nextLines = [];
+
+      edges.forEach(([from, to]) => {
+        const fromEl = nodeRefs.current.get(from);
+        const toEl = nodeRefs.current.get(to);
+        if (!fromEl || !toEl) return;
+        const fromRect = fromEl.getBoundingClientRect();
+        const toRect = toEl.getBoundingClientRect();
+
+        const x1 = fromRect.left - containerRect.left + fromRect.width / 2 + scrollLeft;
+        const y1 = fromRect.top - containerRect.top + fromRect.height + scrollTop;
+        const x2 = toRect.left - containerRect.left + toRect.width / 2 + scrollLeft;
+        const y2 = toRect.top - containerRect.top + scrollTop;
+        nextLines.push({ x1, y1, x2, y2 });
+      });
+
+      setLines(nextLines);
+    };
+
+    buildLines();
+    const onScroll = () => buildLines();
+    const onResize = () => buildLines();
+    container.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onResize);
+    let ro;
+    if (typeof ResizeObserver !== "undefined") {
+      ro = new ResizeObserver(() => buildLines());
+      ro.observe(container);
+    }
+
+    return () => {
+      container.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onResize);
+      if (ro) ro.disconnect();
+    };
+  }, [edges, tree, levels]);
 
   return (
     <Card
@@ -100,18 +158,60 @@ export default function TreeView({ tree, title, showBst }) {
         </div>
       ) : (
         <div style={{ position: "relative" }}>
-          <div style={{ overflowX: "auto", maxHeight: "520px", overflowY: "auto", paddingBottom: "4px" }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: "18px", alignItems: "center", minWidth: total > 10 ? "780px" : "auto" }}>
+          <div ref={containerRef} style={{ overflowX: "auto", maxHeight: "520px", overflowY: "auto", paddingBottom: "4px", position: "relative" }}>
+            {lines.length > 0 && (
+              <svg
+                width={containerRef.current?.scrollWidth || 0}
+                height={containerRef.current?.scrollHeight || 0}
+                style={{ position: "absolute", top: 0, left: 0, pointerEvents: "none" }}
+              >
+                {lines.map((l, i) => (
+                  <line key={i} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} stroke={C.border2} strokeWidth="1" />
+                ))}
+              </svg>
+            )}
+            <div style={{ display: "flex", flexDirection: "column", gap: "22px", alignItems: "center", minWidth: total > 10 ? "860px" : "auto" }}>
               {levels.map((lvl, li) => (
                 <div key={li} style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
                   <div style={{ fontSize: "9px", color: C.textMuted, marginBottom: "6px", fontWeight: 600, letterSpacing: "1px" }}>
                     NIVEL {li}
                   </div>
-                  <div style={{ display: "flex", gap: "10px", justifyContent: "center", flexWrap: "wrap" }}>
-                    {lvl.map((n, i) => (
-                      <AVLNode key={`${n.codigo ?? n.value}-${i}`} node={n} isRoot={li === 0} onHover={setHoveredNode} />
-                    ))}
+                  {(() => {
+                    const boost = li === 1 ? 70 : li === 2 ? 24 : 0;
+                    const levelGap = Math.max(
+                      NODE_GAP,
+                      NODE_GAP + (levels.length - li - 1) * LEVEL_GAP_STEP + boost
+                    );
+                    const levelWidth = lvl.length * NODE_WIDTH + (lvl.length - 1) * levelGap;
+                    return (
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: `repeat(${lvl.length}, ${NODE_WIDTH}px)`,
+                      columnGap: `${levelGap}px`,
+                      justifyContent: "center",
+                      width: levelWidth
+                    }}
+                  >
+                    {lvl.map((n, i) =>
+                      n ? (
+                        <AVLNode
+                          key={`${n.codigo ?? n.value}-${i}`}
+                          node={n}
+                          isRoot={li === 0}
+                          onHover={setHoveredNode}
+                          onMount={(nodeRef, el) => {
+                            if (!el) return;
+                            nodeRefs.current.set(nodeRef, el);
+                          }}
+                        />
+                      ) : (
+                        <div key={`empty-${li}-${i}`} style={{ width: NODE_WIDTH, height: "32px" }} />
+                      )
+                    )}
                   </div>
+                    );
+                  })()}
                   {li < levels.length - 1 && <div style={{ marginTop: "8px", color: C.border2, fontSize: "18px" }}>↓</div>}
                 </div>
               ))}

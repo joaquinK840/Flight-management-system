@@ -17,6 +17,7 @@ import StressSection from "./app/sections/StressSection";
 
 export default function App(){
   const[active,setActive]=useState("tree");
+  const[sidebarCollapsed,setSidebarCollapsed]=useState(false);
   const[tree,setTree]=useState(null),[bstTree,setBstTree]=useState(null),[bstNote,setBstNote]=useState(null);
   const[bstMetrics,setBstMetrics]=useState(null);
   const[metrics,setMetrics]=useState(null),[stressMode,setStress]=useState(false);
@@ -38,6 +39,12 @@ export default function App(){
     if(data.root!==undefined)return data.root;
     if(data.tree!==undefined)return extractTree(data.tree);
     return data;
+  };
+  const findNodeByCode=(root, code, depth=0)=>{
+    if(!root) return null;
+    const nodeCode = root.codigo ?? root.value ?? null;
+    if(nodeCode === code) return { node: root, depth };
+    return findNodeByCode(root.left, code, depth + 1) || findNodeByCode(root.right, code, depth + 1);
   };
   const getLeastProfitable=(root)=>{
     if(!root) return null;
@@ -90,7 +97,8 @@ export default function App(){
       if(!parsed.ok){notify("Código inválido","warning");return;}
       try{
         const d=await apiGet(`/avl/search/${parsed.value}`);
-        setSearch({value,found:d.found});
+        const info = d.found ? findNodeByCode(tree, parsed.value) : null;
+        setSearch({value: parsed.value, found: d.found, node: info?.node ?? null, depth: info?.depth ?? null});
         setActive("ops");
       }catch{notify("Error","error");}
     },
@@ -207,7 +215,15 @@ export default function App(){
     {toast&&<Toast msg={toast.text} type={toast.type} onClose={()=>setToast(null)}/>}
     <Topbar stressMode={stressMode} metrics={metrics}/>
     <div style={{display:"flex",height:"calc(100vh - 54px)"}}>
-      <Sidebar active={active} setActive={setActive} stressMode={stressMode} metrics={metrics} leastProfitable={getLeastProfitable(tree)}/>
+      <Sidebar
+        active={active}
+        setActive={setActive}
+        stressMode={stressMode}
+        metrics={metrics}
+        leastProfitable={getLeastProfitable(tree)}
+        collapsed={sidebarCollapsed}
+        onToggle={()=>setSidebarCollapsed((v)=>!v)}
+      />
       <main style={{flex:1,overflowY:"auto",padding:"20px",background:C.bg}}>{section[active]}</main>
     </div>
   </div>;
