@@ -78,8 +78,8 @@ export default function App(){
       const parsed=normalizeCodigo(value);
       if(!parsed.ok){notify("Código inválido","warning");return;}
       try{
-        const d=await apiDelete(`/avl/delete/${parsed.value}`);
-        setTree(extractTree(d));
+        await apiDelete(`/flights/delete/${parsed.value}`);
+        await loadTree();
         notify(`Vuelo ${value} eliminado`,"success");
         setValue("");
         await loadMetrics();
@@ -89,8 +89,8 @@ export default function App(){
       const parsed=normalizeCodigo(value);
       if(!parsed.ok){notify("Código inválido","warning");return;}
       try{
-        const d=await apiDelete(`/avl/cancel/${parsed.value}`);
-        setTree(extractTree(d));
+        await apiDelete(`/flights/cancel/${parsed.value}`);
+        await loadTree();
         notify(`Vuelo ${value} cancelado`,"info");
         setValue("");
         await loadMetrics();
@@ -98,7 +98,15 @@ export default function App(){
     },
     undo:     async()=>{try{const d=await apiPost("/flights/undo");setTree(extractTree(d));notify("Deshecho","info");await loadMetrics();}catch{}},
     redo:     async()=>{try{const d=await apiPost("/flights/redo");setTree(extractTree(d));notify("Rehecho","info");await loadMetrics();}catch{}},
-    profit:   async()=>{try{const d=await apiDelete("/avl/least-profitable");setTree(extractTree(d));notify("Nodo eliminado","success");await loadMetrics();}catch{}},
+    profit:   async()=>{
+      try{
+        const d=await apiDelete("/flights/eliminate-least-profitable");
+        await loadTree();
+        const code=d?.eliminated_code ?? "";
+        notify(code?`Vuelo ${code} eliminado por menor rentabilidad`:"Nodo eliminado","success");
+        await loadMetrics();
+      }catch{notify("Error","error");}
+    },
     compare:  async()=>{
       if(!bstTree){
         notify("Carga un archivo para comparar AVL/BST","warning");

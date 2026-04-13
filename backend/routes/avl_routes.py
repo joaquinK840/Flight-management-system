@@ -247,6 +247,8 @@ async def load_file(file: UploadFile = File(...)):
         shared_avl.mass_cancellation_count = getattr(new_avl, 'mass_cancellation_count', 0)
         shared_avl.stress_mode = getattr(new_avl, 'stress_mode', False)
         shared_avl.depth_limit = getattr(new_avl, 'depth_limit', 3)
+        flight_repository.tree = shared_avl
+        flight_repository.use_bst = False
         flight_repository.undo_stack.clear()
         flight_repository.redo_stack.clear()
         # Serializar árboles

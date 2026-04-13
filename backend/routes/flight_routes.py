@@ -3,8 +3,28 @@ from pydantic import BaseModel
 from typing import Optional
 from services.profitability_service import find_least_profitable, count_subtree_size
 from core.shared_instances import flight_repository, flight_queue  # Usar instancias compartidas
+from core.shared_instances import avl as shared_avl
 
 router = APIRouter(prefix="/flights", tags=["Flights"])
+
+
+def _sync_shared_avl_from_repo():
+    """Keep shared AVL in sync with repository tree state."""
+    tree = flight_repository.tree
+    if tree is None:
+        return
+    if hasattr(tree, "getRoot"):
+        shared_avl.root = tree.getRoot()
+    else:
+        shared_avl.root = getattr(tree, "root", None)
+    if hasattr(tree, "rotation_counts"):
+        shared_avl.rotation_counts = tree.rotation_counts.copy()
+    if hasattr(tree, "mass_cancellation_count"):
+        shared_avl.mass_cancellation_count = tree.mass_cancellation_count
+    if hasattr(tree, "stress_mode"):
+        shared_avl.stress_mode = tree.stress_mode
+    if hasattr(tree, "depth_limit"):
+        shared_avl.depth_limit = tree.depth_limit
 
 
 # =====================
@@ -85,6 +105,7 @@ def delete_flight(codigo: int):
     """
     try:
         result = flight_repository.delete_flight(codigo)
+        _sync_shared_avl_from_repo()
         return result
     
     except ValueError as e:
@@ -110,6 +131,8 @@ def cancel_flight_subtree(codigo: int):
     """
     try:
         result = flight_repository.cancel_flight_subtree(codigo)
+        _sync_shared_avl_from_repo()
+        _sync_shared_avl_from_repo()
         return result
     
     except ValueError as e:
