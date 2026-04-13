@@ -1,10 +1,8 @@
 import Btn from "../components/Btn";
 import Card from "../components/Card";
-import Pill from "../components/Pill";
 import { C, gCardTitle, gInput, gLabel } from "../theme";
 
-export default function OpsSection({ value, setValue, handlers, searchResult, traversalResult, traversalMode }) {
-  const tl = { pre: "Preorden", in: "Inorden", post: "Postorden", level: "Por niveles" };
+export default function OpsSection({ value, setValue, handlers, searchResult }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
@@ -13,8 +11,8 @@ export default function OpsSection({ value, setValue, handlers, searchResult, tr
           <label style={gLabel}>CÓDIGO DE VUELO</label>
           <input
             value={value}
-            type="number"
-            placeholder="Ingresa el código numérico del vuelo…"
+            type="text"
+            placeholder="Ingresa el código del vuelo…"
             onChange={(e) => setValue(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handlers.search()}
             style={gInput}
@@ -66,33 +64,6 @@ export default function OpsSection({ value, setValue, handlers, searchResult, tr
             <div style={{ color: C.textMuted, fontSize: "11px", marginTop: "2px" }}>Código: {searchResult.value}</div>
           </div>
         </div>
-      )}
-      {traversalResult && (
-        <Card
-          header={
-            <>
-              <h3 style={gCardTitle}>Recorrido {tl[traversalMode] || traversalMode}</h3>
-              <Pill text={`${Array.isArray(traversalResult) ? traversalResult.length : 0} nodos`} color={C.textSub} bg={C.surface3} border={C.border2} />
-            </>
-          }
-        >
-          <div
-            style={{
-              fontFamily: "monospace",
-              fontSize: "11px",
-              background: C.surface2,
-              border: `1px solid ${C.border}`,
-              padding: "12px",
-              borderRadius: "8px",
-              overflowX: "auto",
-              whiteSpace: "nowrap",
-              color: C.accentLt,
-              letterSpacing: ".3px"
-            }}
-          >
-            {Array.isArray(traversalResult) ? traversalResult.join(" → ") : traversalResult}
-          </div>
-        </Card>
       )}
     </div>
   );

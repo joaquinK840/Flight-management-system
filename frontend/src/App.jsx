@@ -24,6 +24,13 @@ export default function App(){
   const[auditReport,setAudit]=useState(null),[toast,setToast]=useState(null);
 
   const notify=(text,type="info")=>{setToast({text,type});setTimeout(()=>setToast(null),3500);};
+  const normalizeCodigo=(input)=>{
+    const raw=String(input??"").trim();
+    if(!raw)return { ok:false, value:null };
+    const digits=raw.replace(/\D+/g, "");
+    if(!digits)return { ok:false, value:null };
+    return { ok:true, value:parseInt(digits,10) };
+  };
   const extractTree=(data)=>{
     if(!data)return null;
     if(data.root!==undefined)return data.root;
@@ -55,9 +62,37 @@ export default function App(){
   const handleDepth=async(dl)=>{try{const d=await apiPut("/avl/config/depth-limit",{limit:dl});setTree(extractTree(d));setDepth(dl);notify(`Profundidad límite: ${dl}`,"success");await loadMetrics();}catch{notify("Error","error");}};
 
   const handlers={
-    search:   async()=>{if(!value)return;try{const d=await apiGet(`/avl/search/${value}`);setSearch({value,found:d.found});setActive("ops");}catch{notify("Error","error");}},
-    delete:   async()=>{if(!value)return;try{const d=await apiDelete(`/avl/delete/${value}`);setTree(extractTree(d));notify(`Vuelo ${value} eliminado`,"success");setValue("");await loadMetrics();}catch{notify("Error","error");}},
-    cancel:   async()=>{if(!value)return;try{const d=await apiDelete(`/avl/cancel/${value}`);setTree(extractTree(d));notify(`Vuelo ${value} cancelado`,"info");setValue("");await loadMetrics();}catch{notify("Error","error");}},
+    search:   async()=>{
+      const parsed=normalizeCodigo(value);
+      if(!parsed.ok){notify("Código inválido","warning");return;}
+      try{
+        const d=await apiGet(`/avl/search/${parsed.value}`);
+        setSearch({value,found:d.found});
+        setActive("ops");
+      }catch{notify("Error","error");}
+    },
+    delete:   async()=>{
+      const parsed=normalizeCodigo(value);
+      if(!parsed.ok){notify("Código inválido","warning");return;}
+      try{
+        const d=await apiDelete(`/avl/delete/${parsed.value}`);
+        setTree(extractTree(d));
+        notify(`Vuelo ${value} eliminado`,"success");
+        setValue("");
+        await loadMetrics();
+      }catch{notify("Error","error");}
+    },
+    cancel:   async()=>{
+      const parsed=normalizeCodigo(value);
+      if(!parsed.ok){notify("Código inválido","warning");return;}
+      try{
+        const d=await apiDelete(`/avl/cancel/${parsed.value}`);
+        setTree(extractTree(d));
+        notify(`Vuelo ${value} cancelado`,"info");
+        setValue("");
+        await loadMetrics();
+      }catch{notify("Error","error");}
+    },
     undo:     async()=>{try{const d=await apiPost("/flights/undo");setTree(extractTree(d));notify("Deshecho","info");await loadMetrics();}catch{}},
     redo:     async()=>{try{const d=await apiPost("/flights/redo");setTree(extractTree(d));notify("Rehecho","info");await loadMetrics();}catch{}},
     profit:   async()=>{try{const d=await apiDelete("/avl/least-profitable");setTree(extractTree(d));notify("Nodo eliminado","success");await loadMetrics();}catch{}},
@@ -76,14 +111,22 @@ export default function App(){
     audit:    async()=>{try{const d=await apiGet("/avl/audit");setAudit(d);}catch{notify("Error en auditoría","error");}},
   };
 
-  const handleTraversal=async(mode)=>{try{const d=await apiGet(`/avl/traversal/${mode}`);setTrav(d.result??d.traversal??d);setTravMode(mode);setActive("ops");}catch{notify("Error","error");}};
+  const handleTraversal=async(mode)=>{
+    const apiMode=mode==="level"?"bfs":mode;
+    try{
+      const d=await apiGet(`/avl/traversal/${apiMode}`);
+      setTrav(d.result??d.traversal??d);
+      setTravMode(mode);
+      setActive("traversal");
+    }catch{notify("Error","error");}
+  };
   const onUpdated=async()=>{await loadTree();await loadMetrics();};
 
   const section={
     upload:<UploadSection onFileLoad={handleFileLoad} onExport={handleExport} depthLimit={depthLimit} onDepthLimitChange={handleDepth}/>,
     tree:<div>{showComparison?<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"16px"}}><TreeView tree={tree} title="Árbol AVL"/><div><TreeView tree={bstTree} title="Árbol BST (comparación)" showBst/>{bstNote&&<div style={{marginTop:"8px",fontSize:"11px",color:C.amber,textAlign:"center"}}>{bstNote}</div>}<div style={{marginTop:"10px",textAlign:"center"}}><Btn color={C.textSub} bg={C.surface3} border={C.border2} onClick={()=>{setComp(false);setBstTree(null);}}>Cerrar comparación</Btn></div></div></div>:<TreeView tree={tree} title="Árbol AVL — Sistema de vuelos"/>}</div>,
-    ops:<OpsSection value={value} setValue={setValue} handlers={handlers} searchResult={searchResult} traversalResult={traversalResult} traversalMode={traversalMode}/>,
-    traversal:<TraversalSection onTraversal={handleTraversal}/>,
+    ops:<OpsSection value={value} setValue={setValue} handlers={handlers} searchResult={searchResult}/>,
+    traversal:<TraversalSection onTraversal={handleTraversal} traversalResult={traversalResult} traversalMode={traversalMode}/>,
     metrics:<MetricsSection metrics={metrics} refreshMetrics={loadMetrics}/>,
     queue:<QueueSection onUpdated={onUpdated}/>,
     versions:<VersionSection onRestored={onUpdated}/>,
